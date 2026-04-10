@@ -4,8 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#4A90A4">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍼</text></svg>">
 <title>敏宝饮食管家</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js"></script>
 <style>
 :root{
   --pri:#4A90A4;--pri-l:#E8F4F8;--pri-d:#3A7A8E;
@@ -17,11 +20,24 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;padding-bottom:72px}
+
+/* Banners */
+.banner{position:sticky;top:0;z-index:90;padding:10px 16px;font-size:12px;display:none;align-items:center;gap:8px}
+.banner.show{display:flex}
+.banner-red{background:#FDE8E8;color:#C0392B;border-bottom:1px solid #F5C6CB}
+.banner-yellow{background:#FFF3CD;color:#856404;border-bottom:1px solid #FFEEBA}
+.banner .bx{margin-left:auto;background:none;border:none;font-size:16px;cursor:pointer;color:inherit;padding:0 4px}
+
 /* Nav */
 .bnav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--bdr);display:flex;padding-bottom:env(safe-area-inset-bottom,6px);z-index:100}
 .bnav-i{flex:1;display:flex;flex-direction:column;align-items:center;padding:7px 0 3px;font-size:10px;color:var(--sub);border:none;background:none;cursor:pointer}
 .bnav-i.on{color:var(--pri)}
 .bnav-i .ni{font-size:21px;margin-bottom:1px}
+
+/* FAB */
+.fab{position:fixed;bottom:76px;right:16px;width:56px;height:56px;border-radius:50%;background:var(--grn);color:#fff;border:none;font-size:28px;box-shadow:0 4px 12px rgba(92,184,92,.4);cursor:pointer;z-index:99;display:flex;align-items:center;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0)}
+.fab:active{transform:scale(.92)}
+
 /* Header */
 .ph{padding:14px 20px 10px;padding-top:max(14px,env(safe-area-inset-top));background:var(--card)}
 .pt{font-size:21px;font-weight:700}
@@ -59,14 +75,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans G
 .sym-btn{padding:6px 12px;border-radius:16px;font-size:12px;border:1px solid var(--bdr);background:var(--card);color:var(--text);cursor:pointer;display:flex;align-items:center;gap:4px}
 .sym-btn:active{background:var(--bg)}
 .sym-btn.logged{background:var(--pur-l);border-color:var(--pur);color:var(--pur)}
-.sym-more{padding:6px 10px;border-radius:16px;font-size:12px;border:1px dashed var(--bdr);background:none;color:var(--sub);cursor:pointer}
 /* Symptom log */
 .slog{margin:0 14px 10px;font-size:12px;color:var(--sub)}
 .slog-item{display:flex;align-items:center;gap:6px;padding:4px 0}
 .slog-time{font-weight:500;color:var(--pur);min-width:42px}
 .slog-name{flex:1}
+.slog-sev{font-size:10px;padding:1px 6px;border-radius:8px;background:var(--pur-l);color:var(--pur)}
 .slog-del{color:var(--sub);cursor:pointer;font-size:14px}
-/* Picker */
+/* Picker / Sheet */
 .pk-ov{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.35);z-index:200}
 .pk-ov.show{display:block}
 .pk-sh{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-radius:18px 18px 0 0;max-height:75vh;z-index:201;transform:translateY(100%);transition:transform .25s ease-out;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,6px)}
@@ -88,20 +104,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans G
 .pk-item.rwait{border-color:var(--org);color:var(--org);pointer-events:none;opacity:.5}
 .pk-item .wb{font-size:8px;display:block;margin-top:1px}
 .pk-item.cadd{border-style:dashed;color:var(--pri)}
-/* Analysis */
-.sus-card{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--bdr)}
-.sus-card:last-child{border-bottom:none}
-.sus-rank{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
-.sus-rank.r1{background:var(--red-l);color:var(--red)}.sus-rank.r2{background:var(--org-l);color:var(--org)}.sus-rank.r3{background:var(--pri-l);color:var(--pri)}
-.sus-info{flex:1}.sus-name{font-size:14px;font-weight:500}.sus-detail{font-size:11px;color:var(--sub);margin-top:1px}
-.sus-score{font-size:16px;font-weight:700;text-align:right}
-.sus-score.high{color:var(--red)}.sus-score.med{color:var(--org)}.sus-score.low{color:var(--sub)}
-/* Rotation list */
-.rot-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bdr)}
-.rot-row:last-child{border-bottom:none}
-.rot-name{font-size:13px;font-weight:500;display:flex;align-items:center;gap:4px}
-.rot-st{font-size:11px;text-align:right}
-.rot-ok{color:var(--grn)}.rot-wait{color:var(--org)}
+/* Caregiver chips */
+.cg-bar{display:flex;gap:6px;padding:8px 0;overflow-x:auto}
+.cg-chip{padding:6px 14px;border-radius:16px;font-size:13px;border:1px solid var(--bdr);background:var(--card);color:var(--text);cursor:pointer;white-space:nowrap;flex-shrink:0}
+.cg-chip.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+/* Severity buttons */
+.sev-bar{display:flex;gap:4px;margin:6px 0}
+.sev-btn{flex:1;padding:8px 4px;text-align:center;border-radius:10px;border:1px solid var(--bdr);cursor:pointer;font-size:13px;background:var(--card)}
+.sev-btn.on{background:var(--pur);color:#fff;border-color:var(--pur)}
 /* Profile */
 .pf-card{display:flex;align-items:center;gap:10px;padding:14px}
 .pf-ava{width:44px;height:44px;border-radius:50%;background:var(--pri-l);display:flex;align-items:center;justify-content:center;font-size:20px}
@@ -129,142 +139,142 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans G
 .btn{padding:10px 18px;border-radius:10px;border:none;font-size:13px;cursor:pointer;font-weight:500;display:inline-flex;align-items:center;justify-content:center}
 .btn:active{transform:scale(.97)}
 .btn-p{background:var(--pri);color:#fff}
+.btn-d{background:var(--red);color:#fff}
 .btn-o{background:none;border:1px solid var(--bdr);color:var(--sub)}
 .btn-f{width:100%}.btn-s{padding:5px 10px;font-size:11px}
 .tip{background:#F0F7FF;border-left:3px solid var(--pri);padding:8px 10px;border-radius:0 8px 8px 0;font-size:11px;color:#4A6B8A;line-height:1.5}
 .eh{text-align:center;padding:28px 18px;color:var(--sub);font-size:13px;line-height:1.5}
 .eh .ei{font-size:36px;margin-bottom:6px}
-/* Upload */
-.upl{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border:2px dashed var(--pri);border-radius:var(--r);color:var(--pri);font-size:13px;font-weight:500;cursor:pointer;background:var(--pri-l)}
-.upl:active{transform:scale(.98)}
-/* OCR */
-.ocrp{text-align:center;padding:20px}
-.spin{width:30px;height:30px;border:3px solid var(--bdr);border-top-color:var(--pri);border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 8px}
-@keyframes sp{to{transform:rotate(360deg)}}
-.pbg{width:100%;height:4px;background:var(--bdr);border-radius:2px;margin-top:6px}.pbf{height:100%;background:var(--pri);border-radius:2px;transition:width .3s}
-.ocr-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--bdr);gap:6px}
-.ocr-row:last-child{border-bottom:none}
-.ocr-ck{width:16px;height:16px;accent-color:var(--pri);flex-shrink:0}
-.ocr-n{flex:1;font-size:13px}
-.ocr-sb{display:flex;gap:3px;flex-shrink:0}
-.ocr-sb button{padding:3px 7px;border-radius:6px;border:1px solid var(--bdr);font-size:10px;cursor:pointer;background:none;color:var(--sub)}
-.ocr-sb .os{background:var(--red-l);border-color:var(--red);color:var(--red)}
-.ocr-sb .om{background:var(--org-l);border-color:var(--org);color:#9A6A00}
-.ocr-sb .ol{background:var(--pur-l);border-color:var(--pur);color:var(--pur)}
-.ocr-sb .on{background:var(--bg)}
-.rimg{width:100%;max-height:160px;object-fit:contain;border-radius:8px;border:1px solid var(--bdr);margin-bottom:8px}
-/* Section hdr */
-.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.st{font-size:14px;font-weight:600}
-/* Rotation input */
-.rot-input{display:flex;align-items:center;gap:4px;margin-top:6px}
-.rot-input input{width:50px;padding:4px 6px;border:1px solid var(--bdr);border-radius:6px;font-size:13px;text-align:center;outline:none}
-.rot-input span{font-size:12px;color:var(--sub)}
+/* Timeline */
+.tl-day{margin:0 14px 12px}
+.tl-date{font-size:13px;font-weight:600;color:var(--sub);padding:4px 0 6px}
+.tl-item{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdr)}
+.tl-item:last-child{border-bottom:none}
+.tl-time{font-size:11px;color:var(--sub);min-width:36px;padding-top:2px}
+.tl-icon{font-size:14px;flex-shrink:0}
+.tl-content{flex:1;font-size:13px}
+.tl-foods{color:var(--text)}.tl-sym{color:var(--pur)}
+.tl-cg{font-size:10px;color:var(--sub);margin-top:1px}
+/* Disclaimer */
+.disclaimer{font-size:10px;color:var(--sub);text-align:center;margin-top:6px;padding:8px 16px}
 /* Toast */
 .toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.78);color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;z-index:400;pointer-events:none;opacity:0;transition:opacity .3s}
 .toast.show{opacity:1}
-/* AI btn */
-.ai-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px;border-radius:var(--r);background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:14px;font-weight:600;cursor:pointer;border:none;width:100%}
-.ai-btn:active{transform:scale(.97)}
-.disclaimer{font-size:10px;color:var(--sub);text-align:center;margin-top:6px}
-/* Sym section label */
-.sym-label{padding:0 16px;margin-bottom:6px;font-size:12px;color:var(--sub);font-weight:500;display:flex;align-items:center;gap:4px}
+/* Quick record sheet extras */
+.qr-meal-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 0}
+.qr-meal-btn{padding:14px;border-radius:12px;border:1px solid var(--bdr);background:var(--card);font-size:15px;text-align:center;cursor:pointer}
+.qr-meal-btn:active{background:var(--bg)}
+.qr-tab-bar{display:flex;border-bottom:1px solid var(--bdr);margin-bottom:8px}
+.qr-tab{flex:1;padding:8px;text-align:center;font-size:13px;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent}
+.qr-tab.on{color:var(--pri);border-bottom-color:var(--pri);font-weight:600}
+/* Time adjust */
+.time-chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.time-chip{padding:5px 10px;border-radius:12px;font-size:11px;border:1px solid var(--bdr);cursor:pointer;background:var(--card)}
+.time-chip.on{background:var(--pri);color:#fff;border-color:var(--pri)}
 
 @media screen and (max-width:768px){input,select,textarea{font-size:16px!important}}
 </style>
 </head>
 <body>
 
-<!-- === Page: 规划 === -->
-<div id="pg-plan" class="page on">
-  <div class="ph"><div class="pt">饮食规划</div></div>
-  <div class="cbar" id="planCB"></div>
+<!-- Banners -->
+<div class="banner banner-red" id="bannerRed">⚠️ <span id="bannerRedText">已超过 7 天未备份，请立即导出数据</span><button class="bx" onclick="bannerDismiss('red')">✕</button></div>
+<div class="banner banner-yellow" id="bannerYellow">🔒 <span id="bannerYellowText">存储未加锁，iOS 可能在 7 天后清数据。请添加到主屏幕 + 导出备份</span><button class="bx" onclick="bannerDismiss('yellow')">✕</button></div>
+
+<!-- === Page: 记录 === -->
+<div id="pg-record" class="page on">
+  <div class="ph"><div class="pt">敏宝饮食管家</div></div>
+  <div class="cbar" id="recCB"></div>
   <div class="cstrip" id="calStrip"></div>
-  <div id="planEmpty" class="eh" style="display:none"><div class="ei">👶</div>请先在「档案」中添加宝宝</div>
-  <div id="planBody" style="padding-top:10px;">
-    <div id="planDateLabel" style="padding:0 18px 6px;font-size:12px;color:var(--sub);"></div>
+  <div id="recEmpty" class="eh" style="display:none"><div class="ei">👶</div>请先添加宝宝信息</div>
+  <div id="recBody" style="padding-top:10px;">
+    <div id="recDateLabel" style="padding:0 18px 6px;font-size:12px;color:var(--sub);"></div>
     <div class="mc"><div class="mc-h"><div class="mc-t">🌅 早餐</div></div><div class="mc-b"><div class="fchips" id="fc-bf"></div><button class="addt" onclick="openPk('bf')">+ 添加</button></div></div>
     <div class="mc"><div class="mc-h"><div class="mc-t">☀️ 午餐</div></div><div class="mc-b"><div class="fchips" id="fc-lu"></div><button class="addt" onclick="openPk('lu')">+ 添加</button></div></div>
     <div class="mc"><div class="mc-h"><div class="mc-t">🌙 晚餐</div></div><div class="mc-b"><div class="fchips" id="fc-di"></div><button class="addt" onclick="openPk('di')">+ 添加</button></div></div>
     <div class="mc"><div class="mc-h"><div class="mc-t">🍎 加餐</div></div><div class="mc-b"><div class="fchips" id="fc-sn"></div><button class="addt" onclick="openPk('sn')">+ 添加</button></div></div>
     <!-- Symptom section -->
-    <div class="sym-label">📝 异常记录（点击快速记录）</div>
+    <div style="padding:0 16px;margin-bottom:6px;font-size:12px;color:var(--sub);font-weight:500">📝 异常记录（点击快速记录）</div>
     <div class="sym-bar" id="symBar"></div>
     <div class="slog" id="symLog"></div>
-  </div>
-</div>
-
-<!-- === Page: 分析 === -->
-<div id="pg-ana" class="page">
-  <div class="ph"><div class="pt">智能分析</div></div>
-  <div class="cbar" id="anaCB"></div>
-  <div style="padding-top:10px;">
-    <div class="cd" id="susCard">
-      <div class="sh"><div class="st">可疑食物排名</div></div>
-      <div class="tip" style="margin-bottom:10px;">基于最近30天的饮食记录和异常反应，计算每种食物与症状的关联度。</div>
-      <div id="susList"></div>
-    </div>
-    <div class="cd">
-      <div class="sh"><div class="st">食材轮替状态</div></div>
-      <div id="rotList"></div>
-    </div>
-    <div class="cd">
-      <div class="sh"><div class="st">禁食清单</div></div>
-      <div id="banList"></div>
-    </div>
-    <div class="cd">
-      <button class="ai-btn" onclick="aiAnalyze()">🤖 AI深度分析</button>
-      <div class="disclaimer">整理数据后可分享至AI助手获取深度分析</div>
-    </div>
-  </div>
-</div>
-
-<!-- === Page: 档案 === -->
-<div id="pg-prof" class="page">
-  <div class="ph"><div class="pt">过敏档案</div></div>
-  <div class="cbar" id="profCB"></div>
-  <div style="padding-top:10px;">
-    <div class="cd" id="profCard" style="display:none">
+    <!-- Profile inline -->
+    <div class="cd" id="inlineProfile" style="display:none">
       <div class="pf-card">
         <div class="pf-ava">👶</div>
         <div class="pf-info"><div class="pf-name" id="pfName"></div><div class="pf-meta" id="pfMeta"></div></div>
         <button class="btn btn-s btn-o" onclick="showChildModal(true)">编辑</button>
       </div>
-    </div>
-    <div class="cd">
-      <div class="upl" onclick="document.getElementById('rpFile').click()">📋 上传检测报告（识别过敏原）</div>
-      <input type="file" id="rpFile" accept="image/*" capture="environment" style="display:none" onchange="handleRp(event)">
-    </div>
-    <div class="cd">
-      <div class="sh"><div class="st">过敏原清单</div><button class="btn btn-s btn-p" onclick="showAllergenModal()">+ 添加</button></div>
-      <div style="margin-bottom:10px">
-        <div style="font-size:11px;color:var(--sub);margin-bottom:4px">🚫 重度（禁食）</div>
+      <div style="margin-top:8px">
+        <div style="font-size:11px;color:var(--sub);margin-bottom:4px">🚫 重度过敏原</div>
         <div id="pfSv"><span style="font-size:11px;color:var(--sub)">暂无</span></div>
       </div>
-      <div style="margin-bottom:10px">
-        <div style="font-size:11px;color:var(--sub);margin-bottom:4px">⚠️ 中度</div>
-        <div id="pfMd"><span style="font-size:11px;color:var(--sub)">暂无</span></div>
-      </div>
-      <div style="margin-bottom:10px">
-        <div style="font-size:11px;color:var(--sub);margin-bottom:4px">⚡ 轻度</div>
-        <div id="pfMl"><span style="font-size:11px;color:var(--sub)">暂无</span></div>
+      <div style="margin-top:6px;display:flex;gap:6px">
+        <button class="btn btn-s btn-o" onclick="showAllergenModal()">+ 过敏原</button>
+        <button class="btn btn-s btn-o" onclick="doShare('backup')">📤 备份</button>
       </div>
     </div>
-    <div class="cd">
-      <div class="st" style="margin-bottom:8px">数据备份</div>
-      <div class="tip" style="margin-bottom:8px">数据存在手机浏览器中，清缓存会丢失。建议定期备份。</div>
-      <div id="bkInfo" style="font-size:11px;color:var(--sub);margin-bottom:6px"></div>
+  </div>
+  <div class="disclaimer">⚕️ 本工具不替代医生判断。重度过敏儿童的喂养决策请遵医嘱。</div>
+</div>
+
+<!-- === Page: 时间线 === -->
+<div id="pg-timeline" class="page">
+  <div class="ph">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="pt">时间线</div>
       <div style="display:flex;gap:6px">
-        <button class="btn btn-p" style="flex:1" onclick="shareData()">一键备份</button>
-        <button class="btn btn-o" style="flex:1" onclick="exportData()">存为文件</button>
+        <button class="btn btn-s btn-o" onclick="doShare('card')">📤 今日卡片</button>
+        <button class="btn btn-s btn-o" onclick="exportCSV()">CSV</button>
+        <button class="btn btn-s btn-o" onclick="exportJSON()">JSON</button>
       </div>
-      <button class="btn btn-o btn-f" style="margin-top:6px" onclick="document.getElementById('impFile').click()">恢复数据</button>
-      <input type="file" id="impFile" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
+  </div>
+  <div class="cbar" id="tlCB"></div>
+  <div id="tlBody" style="padding-top:10px;"></div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab" onclick="openQuickRecord()">+</button>
+
+<!-- Quick Record Sheet -->
+<div class="pk-ov" id="qrOv" onclick="closeQR()"></div>
+<div class="pk-sh" id="qrSh">
+  <div class="pk-handle"></div>
+  <div class="pk-hdr"><div class="pk-ttl" id="qrTitle">快速记录</div><button class="pk-done" onclick="closeQR()">完成</button></div>
+  <div class="pk-body" id="qrBody">
+    <!-- Step 1: Choose type -->
+    <div id="qrStep1">
+      <div class="qr-tab-bar">
+        <div class="qr-tab on" onclick="qrSetType('meal')">🍽️ 记一餐</div>
+        <div class="qr-tab" onclick="qrSetType('symptom')">⚠️ 记反应</div>
+      </div>
+      <!-- Meal flow -->
+      <div id="qrMealFlow">
+        <div class="fl">谁喂的？</div>
+        <div class="cg-bar" id="qrCaregivers"></div>
+        <div class="fl" style="margin-top:8px">哪一餐？</div>
+        <div class="qr-meal-grid">
+          <div class="qr-meal-btn" onclick="qrPickMeal('bf')">🌅 早餐</div>
+          <div class="qr-meal-btn" onclick="qrPickMeal('lu')">☀️ 午餐</div>
+          <div class="qr-meal-btn" onclick="qrPickMeal('di')">🌙 晚餐</div>
+          <div class="qr-meal-btn" onclick="qrPickMeal('sn')">🍎 加餐</div>
+        </div>
+        <div class="fl" style="margin-top:4px">什么时候？</div>
+        <div class="time-chips" id="qrTimeChips"></div>
+      </div>
+      <!-- Symptom flow -->
+      <div id="qrSymFlow" style="display:none">
+        <div class="fl">症状</div>
+        <div class="pk-grid" id="qrSymGrid"></div>
+        <div class="fl" style="margin-top:10px">严重程度</div>
+        <div class="sev-bar" id="qrSevBar"></div>
+        <div style="margin-top:10px"><button class="btn btn-p btn-f" onclick="qrSaveSym()">保存反应记录</button></div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Picker -->
+<!-- Food Picker -->
 <div class="pk-ov" id="pkOv" onclick="closePk()"></div>
 <div class="pk-sh" id="pkSh">
   <div class="pk-handle"></div>
@@ -273,10 +283,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans G
   <div class="pk-body" id="pkBd"></div>
 </div>
 
+<!-- Onboarding Modal -->
+<div class="mo" id="mOnboard">
+  <div class="mo-c">
+    <div class="mo-t"><span>👶 欢迎使用敏宝饮食管家</span></div>
+    <div class="tip" style="margin-bottom:12px">先告诉我宝宝的基本信息，马上就能开始记录。</div>
+    <div class="fg"><label class="fl">宝宝昵称</label><input class="fi" id="iOBN" placeholder="如：小宝"></div>
+    <div class="fg"><label class="fl">出生日期</label><input class="fi" id="iOBB" type="date"></div>
+    <button class="btn btn-p btn-f" onclick="saveOnboard()">开始使用</button>
+  </div>
+</div>
+
 <!-- Child Modal -->
 <div class="mo" id="mChild">
   <div class="mo-c">
-    <div class="mo-t"><span id="mChildT">添加宝宝</span><button class="mo-x" onclick="closeM('mChild')">✕</button></div>
+    <div class="mo-t"><span id="mChildT">编辑宝宝</span><button class="mo-x" onclick="closeM('mChild')">✕</button></div>
     <div class="fg"><label class="fl">昵称</label><input class="fi" id="iCN" placeholder="如：小宝"></div>
     <div class="fg"><label class="fl">出生日期</label><input class="fi" id="iCB" type="date"></div>
     <button class="btn btn-p btn-f" style="margin-top:6px" onclick="saveChild()">保存</button>
@@ -297,14 +318,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans G
         <div class="sv-opt" id="svL" onclick="pSev('mild')">⚡ 轻度</div>
       </div>
     </div>
-    <div class="fg" id="rotDaysGroup" style="display:none">
-      <label class="fl">轮替周期</label>
-      <div class="rot-input">
-        <input type="number" id="iRotDays" min="0" max="90" value="7">
-        <span>天（0 = 自由食用）</span>
-      </div>
-    </div>
-    <button class="btn btn-p btn-f" onclick="saveAllergen()">添加</button>
+    <button class="btn btn-p btn-f" style="margin-top:8px" onclick="saveAllergen()">添加</button>
     <div style="margin-top:12px">
       <div class="fl">常见过敏原</div>
       <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:3px" id="comAll"></div>
@@ -312,93 +326,59 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans G
   </div>
 </div>
 
-<!-- Report Modal -->
-<div class="mo" id="mReport">
+<!-- Import Modal -->
+<div class="mo" id="mImport">
   <div class="mo-c">
-    <div class="mo-t"><span>报告识别</span><button class="mo-x" onclick="closeM('mReport')">✕</button></div>
-    <div id="ocrLoad" class="ocrp"><div class="spin"></div><div style="font-size:13px" id="ocrSt">识别中...</div><div class="pbg"><div class="pbf" id="ocrBar"></div></div></div>
-    <div id="ocrRes" style="display:none">
-      <img id="rpImg" class="rimg">
-      <div class="tip" style="margin-bottom:8px">识别到以下过敏原，请确认程度和轮替天数后添加。</div>
-      <div id="ocrList"></div>
-      <div id="ocrEmp" class="eh" style="display:none;padding:14px">未识别到过敏原</div>
-      <button class="btn btn-p btn-f" style="margin-top:8px" id="ocrConfBtn" onclick="confirmOcr()">确认添加</button>
+    <div class="mo-t"><span>导入数据</span><button class="mo-x" onclick="closeM('mImport')">✕</button></div>
+    <div class="tip" style="margin-bottom:10px" id="importInfo"></div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-d btn-f" onclick="doImport('replace')">覆盖当前数据</button>
+      <button class="btn btn-p btn-f" onclick="doImport('merge')">合并（推荐）</button>
     </div>
+    <button class="btn btn-o btn-f" style="margin-top:6px" onclick="closeM('mImport')">取消</button>
   </div>
 </div>
 
-<!-- Backup Modal -->
+<!-- Backup Reminder Modal -->
 <div class="mo" id="mBackup">
   <div class="mo-c" style="text-align:center;padding:22px">
     <div style="font-size:32px;margin-bottom:6px">💾</div>
     <div style="font-size:16px;font-weight:600;margin-bottom:3px">别忘了备份</div>
     <div style="font-size:12px;color:var(--sub);margin-bottom:3px" id="bkDays"></div>
     <div style="font-size:11px;color:var(--sub);margin-bottom:14px" id="bkCnt"></div>
-    <button class="btn btn-p btn-f" onclick="closeM('mBackup');shareData()">一键备份</button>
+    <button class="btn btn-p btn-f" onclick="closeM('mBackup');doShare('backup')">一键备份</button>
     <button class="btn btn-o btn-f" style="margin-top:6px" onclick="closeM('mBackup')">下次再说</button>
   </div>
 </div>
 
-<!-- AI Analysis Modal -->
-<div class="mo" id="mAI">
-  <div class="mo-c">
-    <div class="mo-t"><span>AI深度分析</span><button class="mo-x" onclick="closeM('mAI')">✕</button></div>
-    <!-- Loading state -->
-    <div id="aiLoading" style="display:none;text-align:center;padding:24px;">
-      <div class="spin"></div>
-      <div style="font-size:13px;color:var(--text);margin-top:4px;">Kimi正在分析饮食与症状的关联...</div>
-      <div style="font-size:11px;color:var(--sub);margin-top:2px;">通常需要15-30秒</div>
-    </div>
-    <!-- Result state -->
-    <div id="aiResult" style="display:none;">
-      <div id="aiContent" style="font-size:13px;line-height:1.8;white-space:pre-wrap;padding:12px;background:var(--bg);border-radius:10px;max-height:60vh;overflow-y:auto;"></div>
-      <div style="display:flex;gap:6px;margin-top:10px;">
-        <button class="btn btn-p" style="flex:1" onclick="copyAIResult()">复制结果</button>
-        <button class="btn btn-o" style="flex:1" onclick="aiAnalyze()">重新分析</button>
-      </div>
-    </div>
-    <!-- Error state -->
-    <div id="aiError" style="display:none;">
-      <div style="text-align:center;padding:16px;color:var(--red);font-size:13px;" id="aiErrMsg"></div>
-      <div class="tip" style="margin:10px 0">如果API调用失败，你可以复制数据手动粘贴到AI助手中分析。</div>
-      <textarea id="aiText" style="width:100%;height:150px;padding:8px;border:1px solid var(--bdr);border-radius:8px;font-size:11px;line-height:1.4;resize:none;outline:none" readonly></textarea>
-      <button class="btn btn-o btn-f" style="margin-top:6px" onclick="copyAI()">复制数据</button>
-    </div>
-    <div class="disclaimer" style="margin-top:8px">分析结果仅供参考，不替代专业医生诊断。</div>
-  </div>
-</div>
-
+<input type="file" id="impFile" accept=".json" style="display:none" onchange="handleImport(event)">
 <div class="toast" id="toast"></div>
 
 <nav class="bnav">
-  <button class="bnav-i on" onclick="go('plan')"><span class="ni">📋</span>规划</button>
-  <button class="bnav-i" onclick="go('ana')"><span class="ni">🔍</span>分析</button>
-  <button class="bnav-i" onclick="go('prof')"><span class="ni">👤</span>档案</button>
+  <button class="bnav-i on" onclick="go('record')"><span class="ni">📋</span>记录</button>
+  <button class="bnav-i" onclick="go('timeline')"><span class="ni">📊</span>时间线</button>
 </nav>
 
 <script>
-const VER=3;
-let D={_v:VER,children:[],records:{},foodHistory:{},activeChild:null,_lastBackup:null,_created:null};
-const ML=['bf','lu','di','sn'],MLN={bf:'早餐',lu:'午餐',di:'晚餐',sn:'加餐'},WK=['日','一','二','三','四','五','六'];
-const SYMPTOMS=['频繁眨眼','揉眼睛','打喷嚏','咳嗽','流鼻涕','鼻塞','皮疹','湿疹加重','荨麻疹','腹痛','腹泻','呕吐','便秘','烦躁哭闹','睡眠不安','口周发红','嘴唇肿','喘息'];
-let selDate=new Date(),pkMeal=null,selSev=null,editCId=null,ocrItems=[];
-selDate.setDate(selDate.getDate()+1);
+// === CONFIG ===
+const VER=4;
+const ML=['bf','lu','di','sn'],MLN={bf:'早餐',lu:'午餐',di:'晚餐',sn:'加餐'};
+const WK=['日','一','二','三','四','五','六'];
+const SYM_PRESETS=['皮疹','呕吐','哭闹','大便异常','湿疹加重','荨麻疹','腹痛','腹泻','咳嗽','流鼻涕','口周发红','烦躁'];
+const CAREGIVERS_DEFAULT=['我自己','奶奶','外婆','姐夫','阿姨'];
+const COM_ALL=['牛奶','鸡蛋','小麦','大豆','花生','坚果','鱼','虾','蟹','芝麻','牛肉','羊肉'];
 
-// Storage
-function save(){D._v=VER;if(!D._created)D._created=td();try{localStorage.setItem('mb3',JSON.stringify(D))}catch(e){}}
-function load(){
-  try{
-    let s=localStorage.getItem('mb3');
-    if(!s)s=localStorage.getItem('mb2'); // v2 migration
-    if(!s)s=localStorage.getItem('minbao_data'); // v1 migration
-    if(s){const r=JSON.parse(s);if(!r.foodHistory)r.foodHistory={};if(!r._lastBackup)r._lastBackup=null;if(!r._created)r._created=td();r._v=VER;D=r}
-  }catch(e){}
-}
+// === STATE ===
+let D={_v:VER,children:[],records:{},foodHistory:{},activeChild:null,_lastBackup:null,_created:null,caregivers:CAREGIVERS_DEFAULT};
+let selDate=new Date(); // defaults to TODAY (not tomorrow)
+let pkMeal=null,selSev=null,editCId=null;
+let qrType='meal',qrCaregiver='我自己',qrMealSlot=null,qrTime='now',qrSymName=null,qrSymSev=3;
+let persistGranted=false;
+let pendingImportData=null;
 
-// Helpers
+// === HELPERS ===
 function fmt(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function td(){return fmt(new Date())}
-function tmw(){const d=new Date();d.setDate(d.getDate()+1);return fmt(d)}
 function dbt(a,b){return Math.round((new Date(a)-new Date(b))/864e5)}
 function gc(){return D.children.find(c=>c.id===D.activeChild)}
 function rk(dt){return D.activeChild+'-'+dt}
@@ -406,145 +386,226 @@ function gr(dt){const k=rk(dt);if(!D.records[k])D.records[k]={bf:[],lu:[],di:[],
 function gh(){if(!D.activeChild)return[];if(!D.foodHistory[D.activeChild])D.foodHistory[D.activeChild]=[];return D.foodHistory[D.activeChild]}
 function ah(f){if(!D.activeChild)return;let h=gh();h=h.filter(x=>x!==f);h.unshift(f);if(h.length>80)h=h.slice(0,80);D.foodHistory[D.activeChild]=h}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
-function now(){return new Date().toTimeString().slice(0,5)}
+function nowTime(){return new Date().toTimeString().slice(0,5)}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
-// Navigation
+// === STORAGE: Write-through cache (sync read, async write) ===
+const DB_NAME='minbao_db';const DB_VER=1;const STORE='appdata';
+let db=null;
+
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(DB_NAME,DB_VER);
+    req.onupgradeneeded=e=>{e.target.result.createObjectStore(STORE)};
+    req.onsuccess=e=>{db=e.target.result;resolve(db)};
+    req.onerror=e=>{console.warn('IndexedDB failed, using localStorage fallback');reject(e)};
+  });
+}
+
+function save(){
+  D._v=VER;
+  if(!D._created)D._created=td();
+  // Sync: always write to localStorage as fallback
+  try{localStorage.setItem('mb4',JSON.stringify(D))}catch(e){}
+  // Async: flush to IndexedDB
+  if(db){
+    try{
+      const tx=db.transaction(STORE,'readwrite');
+      tx.objectStore(STORE).put(JSON.stringify(D),'appdata');
+    }catch(e){console.warn('IDB write failed:',e)}
+  }
+}
+
+async function load(){
+  // Try IndexedDB first
+  try{
+    await openDB();
+    const tx=db.transaction(STORE,'readonly');
+    const req=tx.objectStore(STORE).get('appdata');
+    const result=await new Promise((res,rej)=>{req.onsuccess=()=>res(req.result);req.onerror=rej});
+    if(result){const r=JSON.parse(result);migrateData(r);return}
+  }catch(e){console.warn('IDB read failed, trying localStorage')}
+  // Fallback: localStorage
+  try{
+    let s=localStorage.getItem('mb4')||localStorage.getItem('mb3')||localStorage.getItem('mb2')||localStorage.getItem('minbao_data');
+    if(s){const r=JSON.parse(s);migrateData(r);return}
+  }catch(e){}
+}
+
+function migrateData(r){
+  if(!r.foodHistory)r.foodHistory={};
+  if(!r._lastBackup)r._lastBackup=null;
+  if(!r._created)r._created=td();
+  if(!r.caregivers)r.caregivers=CAREGIVERS_DEFAULT;
+  // Migrate symptom format: ensure all symptoms have severity
+  Object.values(r.records||{}).forEach(rec=>{
+    if(rec.symptoms)rec.symptoms.forEach(s=>{if(!s.severity)s.severity=3;if(!s.caregiver)s.caregiver='';});
+    ML.forEach(m=>{
+      if(rec[m])rec[m].forEach((f,i)=>{
+        if(typeof f==='string')rec[m][i]={food:f,caregiver:'',time:''};
+      });
+    });
+  });
+  r._v=VER;
+  D=r;
+}
+
+// === PERSIST STORAGE ===
+async function checkPersist(){
+  if(!navigator.storage||!navigator.storage.persist)return;
+  try{
+    persistGranted=await navigator.storage.persist();
+    if(!persistGranted){
+      document.getElementById('bannerYellow').classList.add('show');
+    }
+  }catch(e){}
+}
+
+// === BANNERS ===
+function checkBanners(){
+  // Red: >7 days no backup
+  if(D._lastBackup){
+    const da=dbt(td(),D._lastBackup);
+    if(da>=7){
+      document.getElementById('bannerRedText').textContent=`已 ${da} 天未备份，请立即导出数据`;
+      document.getElementById('bannerRed').classList.add('show');
+    }
+  }else if(D._created&&dbt(td(),D._created)>=3){
+    document.getElementById('bannerRedText').textContent='从未备份过数据，请立即导出';
+    document.getElementById('bannerRed').classList.add('show');
+  }
+}
+function bannerDismiss(type){
+  document.getElementById('banner'+type.charAt(0).toUpperCase()+type.slice(1)).classList.remove('show');
+}
+
+// === NAVIGATION ===
 function go(p){
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
   document.getElementById('pg-'+p).classList.add('on');
-  document.querySelectorAll('.bnav-i').forEach((n,i)=>n.classList.toggle('on',['plan','ana','prof'][i]===p));
+  document.querySelectorAll('.bnav-i').forEach((n,i)=>n.classList.toggle('on',['record','timeline'][i]===p));
+  document.getElementById('fab').style.display=p==='record'?'flex':'none';
   render();
 }
 
-// Child bars
+// === CHILD BAR ===
 function renderCBs(){
-  ['planCB','anaCB','profCB'].forEach(id=>{
+  ['recCB','tlCB'].forEach(id=>{
     const el=document.getElementById(id);el.innerHTML='';
-    D.children.forEach(c=>{const ch=document.createElement('div');ch.className='cchip'+(c.id===D.activeChild?' on':'');ch.textContent=c.name;ch.onclick=()=>{D.activeChild=c.id;save();render()};el.appendChild(ch)});
+    D.children.forEach(c=>{
+      const ch=document.createElement('div');ch.className='cchip'+(c.id===D.activeChild?' on':'');
+      ch.textContent=c.name;ch.onclick=()=>{D.activeChild=c.id;save();render()};el.appendChild(ch);
+    });
     const a=document.createElement('div');a.className='cchip add';a.textContent='+ 添加';a.onclick=()=>showChildModal(false);el.appendChild(a);
   });
 }
 
-// Calendar
+// === CALENDAR ===
 function renderCal(){
   const el=document.getElementById('calStrip');el.innerHTML='';
-  const b=new Date();b.setDate(b.getDate()-3);
+  const b=new Date();b.setDate(b.getDate()-5);
   for(let i=0;i<14;i++){
     const d=new Date(b);d.setDate(d.getDate()+i);const ds=fmt(d),isT=ds===td(),isS=ds===fmt(selDate);
     const div=document.createElement('div');div.className='cday'+(isS?' sel':'')+(isT&&!isS?' today':'');
     const hasDat=D.activeChild&&D.records[rk(ds)];const past=ds<td();
-    div.innerHTML=`<div class="cw">${isT?'今':'周'+WK[d.getDay()]}</div><div class="cn">${d.getDate()}</div><div class="cdot ${hasDat?(past?'dr':'dp'):''}"></div>`;
+    const cwEl=document.createElement('div');cwEl.className='cw';cwEl.textContent=isT?'今':'周'+WK[d.getDay()];
+    const cnEl=document.createElement('div');cnEl.className='cn';cnEl.textContent=d.getDate();
+    const dotEl=document.createElement('div');dotEl.className='cdot '+(hasDat?(past?'dr':'dp'):'');
+    div.appendChild(cwEl);div.appendChild(cnEl);div.appendChild(dotEl);
     div.onclick=()=>{selDate=new Date(d);render()};el.appendChild(div);
   }
   setTimeout(()=>{const s=el.querySelector('.sel');if(s)s.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'})},50);
 }
 
-// Main render
-function render(){renderCBs();renderCal();renderPlan();renderAna();renderProf()}
+// === MAIN RENDER ===
+function render(){renderCBs();renderCal();renderRecord();renderTimeline();renderProfile()}
 
-// === PLAN PAGE ===
-function renderPlan(){
+// === RECORD PAGE ===
+function renderRecord(){
   const c=gc();
-  document.getElementById('planEmpty').style.display=c?'none':'block';
-  document.getElementById('planBody').style.display=c?'block':'none';
+  document.getElementById('recEmpty').style.display=c?'none':'block';
+  document.getElementById('recBody').style.display=c?'block':'none';
   if(!c)return;
-  const ds=fmt(selDate),isT=ds===td(),isTmw=ds===tmw(),past=ds<td();
-  let tag='';
-  if(isTmw)tag='<span style="display:inline-block;font-size:10px;padding:1px 5px;border-radius:4px;background:var(--pri-l);color:var(--pri);margin-left:4px">规划中</span>';
-  else if(isT)tag='<span style="display:inline-block;font-size:10px;padding:1px 5px;border-radius:4px;background:var(--org-l);color:var(--org);margin-left:4px">今天</span>';
-  else if(past)tag='<span style="display:inline-block;font-size:10px;padding:1px 5px;border-radius:4px;background:var(--bg);color:var(--sub);margin-left:4px">已记录</span>';
-  document.getElementById('planDateLabel').innerHTML=`${selDate.getMonth()+1}月${selDate.getDate()}日 周${WK[selDate.getDay()]} ${tag}`;
+  const ds=fmt(selDate),isT=ds===td(),past=ds<td();
+  let label=`${selDate.getMonth()+1}月${selDate.getDate()}日 周${WK[selDate.getDay()]}`;
+  if(isT)label+=' <span style="display:inline-block;font-size:10px;padding:1px 5px;border-radius:4px;background:var(--org-l);color:var(--org)">今天</span>';
+  else if(past)label+=' <span style="display:inline-block;font-size:10px;padding:1px 5px;border-radius:4px;background:var(--bg);color:var(--sub)">已记录</span>';
+  document.getElementById('recDateLabel').innerHTML=label;
 
   const rec=gr(ds);
   ML.forEach(m=>{
     const ct=document.getElementById('fc-'+m);ct.innerHTML='';
-    rec[m].forEach((f,i)=>{
+    const items=rec[m]||[];
+    items.forEach((item,i)=>{
+      const f=typeof item==='string'?item:(item.food||'');
+      const cg=typeof item==='object'?item.caregiver:'';
       const info=chkFood(f,ds);
-      const ch=document.createElement('span');ch.className='fc'+(info.cls?' '+info.cls:'');
-      ch.innerHTML=`${f}${info.icon||''}<span class="fx" onclick="rmFood('${m}',${i})">✕</span>`;
+      const ch=document.createElement('span');
+      ch.className='fc'+(info.cls?' '+info.cls:'');
+      const nameSpan=document.createElement('span');nameSpan.textContent=f+(cg&&cg!=='我自己'?' ('+cg+')':'');
+      ch.appendChild(nameSpan);
+      if(info.icon){const ic=document.createElement('span');ic.textContent=' '+info.icon;ch.appendChild(ic)}
+      const x=document.createElement('span');x.className='fx';x.textContent='✕';x.onclick=()=>rmFood(m,i);
+      ch.appendChild(x);
       ct.appendChild(ch);
     });
   });
-
-  // Symptoms
-  renderSymBar(ds);
-  renderSymLog(ds);
+  renderSymBar(ds);renderSymLog(ds);renderProfile();
 }
 
 function chkFood(f,ds){
   const c=gc();if(!c)return{};
-  for(const a of c.allergens){
+  for(const a of (c.allergens||[])){
     if(!(f.includes(a.name)||a.name.includes(f)))continue;
-    if(a.severity==='severe')return{cls:'fd',icon:' 🚫'};
-    const rot=a.rotationDays||0;
-    if(rot>0){
-      const last=findLast(a.name,ds);
-      if(last&&last.d<rot)return{cls:'fw',icon:` ⚠️还需${rot-last.d}天`};
-    }
+    if(a.severity==='severe')return{cls:'fd',icon:'🚫'};
   }
   return{};
 }
 
-function findLast(name,before){
-  const c=gc();if(!c)return null;
-  for(let i=1;i<=60;i++){
-    const d=new Date(before);d.setDate(d.getDate()-i);const k=c.id+'-'+fmt(d),r=D.records[k];
-    if(!r)continue;
-    const all=ML.flatMap(m=>r[m]||[]);
-    if(all.some(f=>f.includes(name)||name.includes(f)))return{date:fmt(d),d:i};
-  }
-  return null;
-}
+function rmFood(m,i){const r=gr(fmt(selDate));r[m].splice(i,1);save();renderRecord()}
 
-function rmFood(m,i){const r=gr(fmt(selDate));r[m].splice(i,1);save();renderPlan()}
-
-// Symptoms
+// === SYMPTOMS ===
 function renderSymBar(ds){
   const bar=document.getElementById('symBar');bar.innerHTML='';
   const rec=gr(ds);
-  const logged=rec.symptoms.map(s=>s.name);
-  SYMPTOMS.slice(0,12).forEach(s=>{
+  const logged=(rec.symptoms||[]).map(s=>s.name);
+  SYM_PRESETS.slice(0,8).forEach(s=>{
     const btn=document.createElement('button');
     btn.className='sym-btn'+(logged.includes(s)?' logged':'');
     btn.textContent=s;
-    btn.onclick=()=>logSym(s,ds);
+    btn.onclick=()=>quickLogSym(s,ds);
     bar.appendChild(btn);
   });
-  const more=document.createElement('button');more.className='sym-more';more.textContent='更多...';
-  more.onclick=()=>{
-    bar.innerHTML='';
-    SYMPTOMS.forEach(s=>{
-      const btn=document.createElement('button');btn.className='sym-btn'+(logged.includes(s)?' logged':'');
-      btn.textContent=s;btn.onclick=()=>logSym(s,ds);bar.appendChild(btn);
-    });
-  };
-  bar.appendChild(more);
 }
 
-function logSym(name,ds){
+function quickLogSym(name,ds){
   const rec=gr(ds);
-  rec.symptoms.push({name,time:now(),ts:Date.now()});
-  save();renderPlan();toast('已记录: '+name);
+  rec.symptoms.push({name,time:nowTime(),ts:Date.now(),severity:3,caregiver:''});
+  save();renderRecord();toast('已记录: '+name);
 }
 
 function renderSymLog(ds){
   const log=document.getElementById('symLog');
   const rec=gr(ds);
   if(!rec.symptoms||rec.symptoms.length===0){log.innerHTML='';return}
-  log.innerHTML='<div style="padding:4px 4px 2px;font-weight:500;">今日记录：</div>';
+  const hdr=document.createElement('div');hdr.style.cssText='padding:4px 4px 2px;font-weight:500;';hdr.textContent='今日异常记录：';
+  log.innerHTML='';log.appendChild(hdr);
   rec.symptoms.forEach((s,i)=>{
     const item=document.createElement('div');item.className='slog-item';
-    item.innerHTML=`<span class="slog-time">${s.time||'--:--'}</span><span class="slog-name">${s.name}</span><span class="slog-del" onclick="rmSym(${i})">✕</span>`;
+    const time=document.createElement('span');time.className='slog-time';time.textContent=s.time||'--:--';
+    const name=document.createElement('span');name.className='slog-name';name.textContent=s.name;
+    const sev=document.createElement('span');sev.className='slog-sev';sev.textContent='严重度'+s.severity;
+    const del=document.createElement('span');del.className='slog-del';del.textContent='✕';del.onclick=()=>{rec.symptoms.splice(i,1);save();renderRecord()};
+    item.appendChild(time);item.appendChild(name);item.appendChild(sev);item.appendChild(del);
     log.appendChild(item);
   });
 }
 
-function rmSym(i){const r=gr(fmt(selDate));r.symptoms.splice(i,1);save();renderPlan()}
-
-// === PICKER ===
-function openPk(m){
+// === FOOD PICKER ===
+function openPk(m,caregiver){
   if(!gc()){toast('请先添加宝宝');return}
   pkMeal=m;
+  if(caregiver)qrCaregiver=caregiver;
   document.getElementById('pkTtl').textContent='选择食材 · '+MLN[m];
   document.getElementById('pkSrc').value='';
   document.getElementById('pkOv').classList.add('show');
@@ -552,279 +613,166 @@ function openPk(m){
   renderPk();
   setTimeout(()=>document.getElementById('pkSrc').focus(),250);
 }
-function closePk(){document.getElementById('pkOv').classList.remove('show');document.getElementById('pkSh').classList.remove('show');pkMeal=null}
+function closePk(){
+  document.getElementById('pkOv').classList.remove('show');
+  document.getElementById('pkSh').classList.remove('show');
+  pkMeal=null;
+}
 
 function renderPk(){
   const bd=document.getElementById('pkBd'),q=document.getElementById('pkSrc').value.trim(),c=gc();
   if(!c)return;
-  const ds=fmt(selDate),rec=gr(ds),cur=rec[pkMeal]||[],hist=gh();
-  const sevNames=c.allergens.filter(a=>a.severity==='severe').map(a=>a.name);
-  const rotFoods=c.allergens.filter(a=>a.severity!=='severe'&&(a.rotationDays||0)>0).map(a=>{
-    const last=findLast(a.name,ds);const ok=!last||last.d>=a.rotationDays;
-    return{name:a.name,ok,left:last?Math.max(0,a.rotationDays-last.d):0,rot:a.rotationDays};
-  });
+  const ds=fmt(selDate),rec=gr(ds),cur=(rec[pkMeal]||[]).map(x=>typeof x==='string'?x:x.food),hist=gh();
+  const sevNames=(c.allergens||[]).filter(a=>a.severity==='severe').map(a=>a.name);
   bd.innerHTML='';
   if(q){
     const items=hist.filter(f=>f.includes(q)&&!cur.includes(f));
-    if(items.length){const sec=document.createElement('div');sec.innerHTML='<div class="pk-sec">搜索结果</div><div class="pk-grid"></div>';const g=sec.querySelector('.pk-grid');items.slice(0,20).forEach(f=>g.appendChild(mkPkI(f,cur,sevNames,rotFoods)));bd.appendChild(sec)}
-    if(!hist.includes(q)&&!cur.includes(q)){const d=document.createElement('div');d.style.padding='6px 0';const b=document.createElement('div');b.className='pk-item cadd';b.textContent='+ 添加「'+q+'」';b.onclick=()=>pickF(q);d.appendChild(b);bd.appendChild(d)}
+    if(items.length){
+      const sec=document.createElement('div');
+      const hd=document.createElement('div');hd.className='pk-sec';hd.textContent='搜索结果';sec.appendChild(hd);
+      const g=document.createElement('div');g.className='pk-grid';
+      items.slice(0,20).forEach(f=>g.appendChild(mkPkI(f,cur,sevNames)));
+      sec.appendChild(g);bd.appendChild(sec);
+    }
+    if(!hist.includes(q)&&!cur.includes(q)){
+      const d=document.createElement('div');d.style.padding='6px 0';
+      const b=document.createElement('div');b.className='pk-item cadd';b.textContent='+ 添加「'+q+'」';b.onclick=()=>pickF(q);
+      d.appendChild(b);bd.appendChild(d);
+    }
     return;
   }
-  // Rotation foods
-  if(rotFoods.length){
-    const sec=document.createElement('div');sec.innerHTML='<div class="pk-sec">轮替食材</div><div class="pk-grid"></div>';const g=sec.querySelector('.pk-grid');
-    rotFoods.filter(f=>f.ok&&!cur.includes(f.name)).forEach(f=>{const it=document.createElement('div');it.className='pk-item rok';it.textContent='✓ '+f.name;it.onclick=()=>pickF(f.name);g.appendChild(it)});
-    rotFoods.filter(f=>!f.ok).forEach(f=>{const it=document.createElement('div');it.className='pk-item rwait';it.innerHTML=`${f.name}<span class="wb">还需${f.left}天</span>`;g.appendChild(it)});
-    bd.appendChild(sec);
-  }
   // Severe
-  if(sevNames.length){const sec=document.createElement('div');sec.innerHTML='<div class="pk-sec">禁食</div><div class="pk-grid"></div>';const g=sec.querySelector('.pk-grid');sevNames.forEach(n=>{const it=document.createElement('div');it.className='pk-item dis';it.textContent='🚫 '+n;g.appendChild(it)});bd.appendChild(sec)}
+  if(sevNames.length){
+    const sec=document.createElement('div');
+    const hd=document.createElement('div');hd.className='pk-sec';hd.textContent='禁食';sec.appendChild(hd);
+    const g=document.createElement('div');g.className='pk-grid';
+    sevNames.forEach(n=>{const it=document.createElement('div');it.className='pk-item dis';it.textContent='🚫 '+n;g.appendChild(it)});
+    sec.appendChild(g);bd.appendChild(sec);
+  }
   // Recent
-  const used=new Set([...sevNames,...rotFoods.map(f=>f.name)]);
+  const used=new Set(sevNames);
   const recent=hist.filter(f=>!used.has(f)&&!cur.includes(f));
-  if(recent.length){const sec=document.createElement('div');sec.innerHTML='<div class="pk-sec">常用食材</div><div class="pk-grid"></div>';const g=sec.querySelector('.pk-grid');recent.slice(0,30).forEach(f=>g.appendChild(mkPkI(f,cur,sevNames,rotFoods)));bd.appendChild(sec)}
-  if(!hist.length&&!rotFoods.length)bd.innerHTML='<div class="eh" style="padding:16px"><p>输入食材名称开始记录</p></div>';
+  if(recent.length){
+    const sec=document.createElement('div');
+    const hd=document.createElement('div');hd.className='pk-sec';hd.textContent='常用食材';sec.appendChild(hd);
+    const g=document.createElement('div');g.className='pk-grid';
+    recent.slice(0,30).forEach(f=>g.appendChild(mkPkI(f,cur,sevNames)));
+    sec.appendChild(g);bd.appendChild(sec);
+  }
+  if(!hist.length)bd.innerHTML='<div class="eh" style="padding:16px"><p>输入食材名称开始记录</p></div>';
 }
 
-function mkPkI(f,cur,sev,rot){
+function mkPkI(f,cur,sev){
   const it=document.createElement('div');
   if(sev.some(n=>f.includes(n)||n.includes(f))){it.className='pk-item dis';it.textContent='🚫 '+f}
-  else{
-    const rf=rot.find(r=>f.includes(r.name)||r.name.includes(f));
-    if(rf&&!rf.ok){it.className='pk-item rwait';it.innerHTML=`${f}<span class="wb">还需${rf.left}天</span>`}
-    else{it.className='pk-item'+(cur.includes(f)?' sel':'');it.textContent=f;it.onclick=()=>pickF(f)}
-  }
+  else{it.className='pk-item'+(cur.includes(f)?' sel':'');it.textContent=f;it.onclick=()=>pickF(f)}
   return it;
 }
 
 function pickF(f){
-  if(!pkMeal)return;const rec=gr(fmt(selDate));if(rec[pkMeal].includes(f))return;
-  const c=gc();if(c&&c.allergens.some(a=>a.severity==='severe'&&(f.includes(a.name)||a.name.includes(f)))){toast('⚠️ 含重度过敏原！');return}
-  rec[pkMeal].push(f);ah(f);save();renderPk();renderPlan();toast('已添加 '+f);
-}
-
-// === ANALYSIS PAGE ===
-function renderAna(){
+  if(!pkMeal)return;const rec=gr(fmt(selDate));
+  const cur=(rec[pkMeal]||[]).map(x=>typeof x==='string'?x:x.food);
+  if(cur.includes(f))return;
   const c=gc();
-  if(!c){document.getElementById('susList').innerHTML='<div class="eh">请先添加宝宝</div>';document.getElementById('rotList').innerHTML='';document.getElementById('banList').innerHTML='';return}
-  renderSuspect();renderRotation();renderBan();
-}
-
-function renderSuspect(){
-  const c=gc(),el=document.getElementById('susList');if(!c){el.innerHTML='';return}
-  // Gather 30 days of data
-  const days=[];
-  for(let i=0;i<30;i++){const d=new Date();d.setDate(d.getDate()-i);const ds=fmt(d),k=c.id+'-'+ds,r=D.records[k];if(r)days.push({date:ds,foods:ML.flatMap(m=>r[m]||[]),symptoms:r.symptoms||[]})}
-  if(days.length<3||!days.some(d=>d.symptoms.length>0)){
-    el.innerHTML='<div class="eh" style="padding:12px">需要至少3天记录且包含异常记录才能分析</div>';return;
+  if(c&&(c.allergens||[]).some(a=>a.severity==='severe'&&(f.includes(a.name)||a.name.includes(f)))){toast('⚠️ 含重度过敏原！');return}
+  // Dedup: same meal slot + same food + same caregiver = skip
+  const existing=rec[pkMeal]||[];
+  if(existing.some(x=>(typeof x==='object'?x.food:x)===f&&(typeof x==='object'?x.caregiver:'')===(qrCaregiver||''))){
+    toast('已记录过');return;
   }
-  // Get all unique foods
-  const allFoods=new Set();days.forEach(d=>d.foods.forEach(f=>allFoods.add(f)));
-  // Calculate suspicion score for each food
-  const scores=[];
-  allFoods.forEach(food=>{
-    let withFood=0,withFoodSym=0,withoutFood=0,withoutFoodSym=0;
-    // Check food eaten days and symptoms within 48hrs
-    days.forEach((day,idx)=>{
-      const hasFood=day.foods.some(f=>f===food);
-      // Check symptoms today + next 2 days
-      let hasSym=day.symptoms.length>0;
-      if(!hasSym){
-        for(let j=1;j<=2;j++){
-          const nextDay=days.find(dd=>dbt(dd.date,day.date)===-j);
-          if(nextDay&&nextDay.symptoms.length>0){hasSym=true;break}
-        }
-      }
-      if(hasFood){withFood++;if(hasSym)withFoodSym++}
-      else{withoutFood++;if(hasSym)withoutFoodSym++}
-    });
-    if(withFood<2)return;
-    const rateWith=withFoodSym/withFood;
-    const rateWithout=withoutFood>0?withoutFoodSym/withoutFood:0;
-    const score=rateWithout>0?rateWith/rateWithout:(rateWith>0?5:0);
-    if(score>1.2)scores.push({food,score:Math.round(score*10)/10,rateWith:Math.round(rateWith*100),rateWithout:Math.round(rateWithout*100),days:withFood});
-  });
-  scores.sort((a,b)=>b.score-a.score);
-
-  if(scores.length===0){el.innerHTML='<div class="eh" style="padding:12px">暂未发现明显可疑食物</div>';return}
-  el.innerHTML='';
-  scores.slice(0,10).forEach((s,i)=>{
-    const row=document.createElement('div');row.className='sus-card';
-    const rk=i<1?'r1':i<3?'r2':'r3';
-    const sc=s.score>=3?'high':s.score>=2?'med':'low';
-    row.innerHTML=`<div class="sus-rank ${rk}">${i+1}</div><div class="sus-info"><div class="sus-name">${s.food}</div><div class="sus-detail">食用后${s.rateWith}%出现症状 · 未食用${s.rateWithout}% · 共${s.days}天</div></div><div class="sus-score ${sc}">${s.score}x</div>`;
-    el.appendChild(row);
-  });
-  el.innerHTML+='<div class="disclaimer" style="margin-top:8px">仅供参考，不替代医生诊断。可疑指数=食用后症状率÷未食用症状率。</div>';
+  rec[pkMeal].push({food:f,caregiver:qrCaregiver||'',time:nowTime()});
+  ah(f);save();renderPk();renderRecord();toast('已添加 '+f);
 }
 
-function renderRotation(){
-  const c=gc(),el=document.getElementById('rotList');if(!c){el.innerHTML='';return}
-  const rots=c.allergens.filter(a=>a.severity!=='severe'&&(a.rotationDays||0)>0);
-  if(!rots.length){el.innerHTML='<span style="font-size:12px;color:var(--sub)">暂无轮替食材</span>';return}
-  el.innerHTML='';
-  rots.forEach(a=>{
-    const last=findLast(a.name,td());
-    const row=document.createElement('div');row.className='rot-row';
-    let st;
-    if(!last)st=`<div class="rot-st rot-ok">可食用 ✓</div>`;
-    else if(last.d>=a.rotationDays)st=`<div class="rot-st rot-ok">上次${last.d}天前 · 可食用 ✓</div>`;
-    else st=`<div class="rot-st rot-wait">上次${last.d}天前 · 等${a.rotationDays-last.d}天</div>`;
-    const sev=a.severity==='moderate'?'⚠️':'⚡';
-    row.innerHTML=`<div class="rot-name">${sev} ${a.name}<span style="font-size:10px;color:var(--sub);margin-left:4px">${a.rotationDays}天轮替</span></div>${st}`;
-    el.appendChild(row);
+// === QUICK RECORD (FAB) ===
+function openQuickRecord(){
+  if(!gc()){
+    // No child yet, show onboarding
+    document.getElementById('mOnboard').classList.add('show');
+    return;
+  }
+  qrType='meal';qrCaregiver='我自己';qrMealSlot=null;qrTime='now';qrSymName=null;qrSymSev=3;
+  document.getElementById('qrOv').classList.add('show');
+  document.getElementById('qrSh').classList.add('show');
+  renderQR();
+}
+function closeQR(){
+  document.getElementById('qrOv').classList.remove('show');
+  document.getElementById('qrSh').classList.remove('show');
+}
+
+function qrSetType(t){
+  qrType=t;
+  document.querySelectorAll('.qr-tab').forEach((el,i)=>el.classList.toggle('on',['meal','symptom'][i]===t));
+  document.getElementById('qrMealFlow').style.display=t==='meal'?'block':'none';
+  document.getElementById('qrSymFlow').style.display=t==='symptom'?'block':'none';
+  if(t==='symptom')renderQRSym();
+}
+
+function renderQR(){
+  // Caregivers
+  const cgBar=document.getElementById('qrCaregivers');cgBar.innerHTML='';
+  (D.caregivers||CAREGIVERS_DEFAULT).forEach(cg=>{
+    const ch=document.createElement('div');ch.className='cg-chip'+(cg===qrCaregiver?' on':'');
+    ch.textContent=cg;ch.onclick=()=>{qrCaregiver=cg;renderQR()};cgBar.appendChild(ch);
   });
-}
-
-function renderBan(){
-  const c=gc(),el=document.getElementById('banList');if(!c){el.innerHTML='';return}
-  const sv=c.allergens.filter(a=>a.severity==='severe');
-  if(!sv.length){el.innerHTML='<span style="font-size:12px;color:var(--sub)">暂无</span>';return}
-  el.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:5px"></div>';
-  const wrap=el.firstChild;
-  sv.forEach(a=>{const t=document.createElement('span');t.className='atag sv';t.textContent='🚫 '+a.name;wrap.appendChild(t)});
-}
-
-// AI Analysis - Kimi (Moonshot) API
-const KIMI_KEY='sk-6V9graAg49AhNI9kjsVPTgN2a7VONBlu8EY8JdF836OKFnmN';
-const KIMI_URL='https://api.moonshot.cn/v1/chat/completions';
-const KIMI_MODEL='moonshot-v1-32k';
-
-function buildPrompt(){
-  const c=gc();if(!c)return '';
-  const days=[];
-  for(let i=0;i<30;i++){const d=new Date();d.setDate(d.getDate()-i);const ds=fmt(d),k=c.id+'-'+ds,r=D.records[k];
-    if(r){const foods=ML.flatMap(m=>(r[m]||[]).map(f=>f));const syms=(r.symptoms||[]).map(s=>s.time+' '+s.name);
-    if(foods.length||syms.length)days.push({date:ds,foods,symptoms:syms})}}
-
-  let text=`【宝宝信息】\n姓名：${c.name}\n出生日期：${c.birth||'未知'}\n\n`;
-  text+=`【过敏原档案】\n`;
-  c.allergens.forEach(a=>{
-    const sev={severe:'重度(禁食)',moderate:'中度',mild:'轻度'}[a.severity]||a.severity;
-    const rot=(a.rotationDays||0)>0?`，${a.rotationDays}天轮替`:'';
-    text+=`- ${a.name}：${sev}${rot}\n`;
+  // Time chips
+  const tc=document.getElementById('qrTimeChips');tc.innerHTML='';
+  [['now','现在'],['10min','10分钟前'],['1hr','1小时前'],['morning','今天早上'],['yesterday','昨天']].forEach(([v,label])=>{
+    const ch=document.createElement('div');ch.className='time-chip'+(qrTime===v?' on':'');
+    ch.textContent=label;ch.onclick=()=>{qrTime=v;renderQR()};tc.appendChild(ch);
   });
-  text+=`\n【近期饮食和症状记录（最近30天）】\n`;
-  if(days.length===0){text+='暂无记录\n'}
-  else{days.forEach(d=>{
-    text+=`${d.date}：\n`;
-    if(d.foods.length)text+=`  饮食：${d.foods.join('、')}\n`;
-    if(d.symptoms.length)text+=`  异常：${d.symptoms.join('、')}\n`;
-  })}
-  return text;
+  // Tabs
+  document.querySelectorAll('.qr-tab').forEach((el,i)=>el.classList.toggle('on',['meal','symptom'][i]===qrType));
+  document.getElementById('qrMealFlow').style.display=qrType==='meal'?'block':'none';
+  document.getElementById('qrSymFlow').style.display=qrType==='symptom'?'block':'none';
+  if(qrType==='symptom')renderQRSym();
 }
 
-const SYSTEM_PROMPT=`你是一位资深的儿童过敏专科营养分析助手。家长会提供过敏儿童的饮食记录和异常症状记录，你需要帮助分析食物与症状之间的关联。
-
-分析原则：
-1. 食物过敏反应分两种时间模式：IgE介导的急性反应（进食后几分钟到2小时）和非IgE介导的延迟反应（几小时到72小时），分析时要考虑这两种时间窗口。
-2. 关注食物与症状的时间关联性：某食物食用后的1-48小时内是否频繁出现特定症状。
-3. 注意食物组合效应：多种轻度过敏食物同时食用可能加重反应。
-4. 注意累积效应：同一食物短期内重复食用可能加重反应。
-5. 区分"关联"和"因果"——提供分析但不做确定性诊断。
-
-输出要求：
-- 用通俗易懂的中文回答，像一位有经验的营养师在跟家长对话。
-- 分析要具体，引用实际的日期和食物数据作为依据。
-- 给出可执行的建议，比如"建议下周单独排除XX观察3天"。
-- 如果数据不足以得出结论，直接说明需要更多记录。
-- 不要用markdown格式，用自然语言分段表达。`;
-
-const USER_PROMPT_SUFFIX=`\n\n请从以下角度分析：
-1. 哪些食物最可能与宝宝的异常症状相关？请结合具体日期数据说明依据。
-2. 是否存在食物组合或累积效应导致症状加重的情况？
-3. 建议接下来的具体饮食排除方案（精确到哪个食物、排除几天、如何观察）。
-4. 需要特别关注的症状模式或趋势。`;
-
-async function aiAnalyze(){
-  const c=gc();if(!c){toast('请先添加宝宝');return}
-  const prompt=buildPrompt();
-
-  // Show modal with loading
-  document.getElementById('mAI').classList.add('show');
-  document.getElementById('aiLoading').style.display='block';
-  document.getElementById('aiResult').style.display='none';
-  document.getElementById('aiError').style.display='none';
-
-  try{
-    const resp=await fetch(KIMI_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+KIMI_KEY},
-      body:JSON.stringify({
-        model:KIMI_MODEL,
-        messages:[
-          {role:'system',content:SYSTEM_PROMPT},
-          {role:'user',content:prompt+USER_PROMPT_SUFFIX}
-        ],
-        temperature:0.3,
-        max_tokens:2000
-      })
-    });
-
-    if(!resp.ok){
-      const err=await resp.text();throw new Error(`API错误 ${resp.status}: ${err.substring(0,100)}`);
-    }
-
-    const data=await resp.json();
-    const content=data.choices&&data.choices[0]&&data.choices[0].message&&data.choices[0].message.content;
-
-    if(!content)throw new Error('未收到有效回复');
-
-    // Show result
-    document.getElementById('aiLoading').style.display='none';
-    document.getElementById('aiResult').style.display='block';
-    document.getElementById('aiContent').textContent=content;
-
-  }catch(err){
-    console.error('AI analysis error:',err);
-    document.getElementById('aiLoading').style.display='none';
-    document.getElementById('aiError').style.display='block';
-    document.getElementById('aiErrMsg').textContent='分析失败：'+err.message;
-    document.getElementById('aiText').value=prompt+USER_PROMPT_SUFFIX;
+function renderQRSym(){
+  const grid=document.getElementById('qrSymGrid');grid.innerHTML='';
+  SYM_PRESETS.forEach(s=>{
+    const it=document.createElement('div');it.className='pk-item'+(qrSymName===s?' sel':'');
+    it.textContent=s;it.onclick=()=>{qrSymName=s;renderQRSym()};grid.appendChild(it);
+  });
+  const sevBar=document.getElementById('qrSevBar');sevBar.innerHTML='';
+  for(let i=1;i<=5;i++){
+    const btn=document.createElement('div');btn.className='sev-btn'+(qrSymSev===i?' on':'');
+    btn.textContent=i;btn.onclick=()=>{qrSymSev=i;renderQRSym()};sevBar.appendChild(btn);
   }
 }
 
-async function copyAIResult(){
-  const text=document.getElementById('aiContent').textContent;
-  if(navigator.share){try{await navigator.share({title:'敏宝AI分析',text});return}catch(e){}}
-  try{await navigator.clipboard.writeText(text);toast('已复制')}catch(e){toast('复制失败')}
+function qrPickMeal(slot){
+  // Adjust date based on time selection
+  let targetDate=new Date();
+  if(qrTime==='yesterday')targetDate.setDate(targetDate.getDate()-1);
+  selDate=targetDate;
+  qrMealSlot=slot;
+  closeQR();
+  openPk(slot,qrCaregiver);
 }
 
-async function copyAI(){
-  const text=document.getElementById('aiText').value;
-  try{await navigator.clipboard.writeText(text);toast('已复制')}catch(e){document.getElementById('aiText').select();document.execCommand('copy');toast('已复制')}
+function qrSaveSym(){
+  if(!qrSymName){toast('请选择症状');return}
+  let targetDate=new Date();
+  if(qrTime==='yesterday')targetDate.setDate(targetDate.getDate()-1);
+  selDate=targetDate;
+  const rec=gr(fmt(selDate));
+  rec.symptoms.push({name:qrSymName,time:nowTime(),ts:Date.now(),severity:qrSymSev,caregiver:qrCaregiver||''});
+  save();closeQR();renderRecord();toast('已记录: '+qrSymName+' (严重度'+qrSymSev+')');
 }
 
-// === PROFILE PAGE ===
-function renderProf(){
-  const c=gc(),card=document.getElementById('profCard');
-  if(!c){card.style.display='none';['pfSv','pfMd','pfMl'].forEach(id=>document.getElementById(id).innerHTML='<span style="font-size:11px;color:var(--sub)">请先添加宝宝</span>');return}
-  card.style.display='block';
-  document.getElementById('pfName').textContent=c.name;
-  let meta='';if(c.birth){const m=Math.floor(dbt(td(),c.birth)/30),y=Math.floor(m/12);meta=y>0?`${y}岁${m%12}个月`:`${m}个月`;meta+=' · '+c.birth}
-  document.getElementById('pfMeta').textContent=meta;
-
-  // Backup info
-  const bk=document.getElementById('bkInfo');
-  if(D._lastBackup){const da=dbt(td(),D._lastBackup);bk.textContent=da===0?'今天已备份 ✓':`上次备份：${D._lastBackup}（${da}天前）`;bk.style.color=da>7?'var(--org)':'var(--grn)'}
-  else{bk.textContent='尚未备份';bk.style.color='var(--org)'}
-
-  // Allergens by tier
-  const tiers={severe:{el:'pfSv',cls:'sv',icon:'🚫'},moderate:{el:'pfMd',cls:'md',icon:'⚠️'},mild:{el:'pfMl',cls:'ml',icon:'⚡'}};
-  Object.entries(tiers).forEach(([sev,cfg])=>{
-    const items=c.allergens.filter(a=>a.severity===sev);const el=document.getElementById(cfg.el);
-    if(!items.length){el.innerHTML='<span style="font-size:11px;color:var(--sub)">暂无</span>';return}
-    el.innerHTML='';
-    items.forEach(a=>{
-      const t=document.createElement('span');t.className='atag '+cfg.cls;
-      const rotTxt=(a.rotationDays||0)>0?` ${a.rotationDays}天`:'';
-      t.innerHTML=`${cfg.icon} ${a.name}${rotTxt} <span class="tx" onclick="rmAllergen('${a.name}')">✕</span>`;
-      el.appendChild(t);
-    });
-  });
+// === ONBOARDING ===
+function saveOnboard(){
+  const name=document.getElementById('iOBN').value.trim(),birth=document.getElementById('iOBB').value;
+  if(!name){toast('请输入宝宝昵称');return}
+  const id='c_'+Date.now();
+  D.children.push({id,name,birth,allergens:[]});
+  D.activeChild=id;
+  save();closeM('mOnboard');render();toast('添加成功！现在可以开始记录了');
 }
 
-// Child management
+// === CHILD MANAGEMENT ===
 function showChildModal(edit){
   editCId=edit?D.activeChild:null;const c=edit?gc():null;
   document.getElementById('mChildT').textContent=edit?'编辑宝宝':'添加宝宝';
@@ -840,18 +788,20 @@ function saveChild(){
   save();closeM('mChild');render();toast(editCId?'已更新':'添加成功');
 }
 function delChild(){
-  if(!confirm('确定删除？'))return;const id=D.activeChild;
-  D.children=D.children.filter(c=>c.id!==id);Object.keys(D.records).forEach(k=>{if(k.startsWith(id))delete D.records[k]});delete D.foodHistory[id];
-  D.activeChild=D.children.length?D.children[0].id:null;save();closeM('mChild');render();
+  if(!confirm('确定删除？所有相关记录也会被删除。'))return;
+  const id=D.activeChild;
+  D.children=D.children.filter(c=>c.id!==id);
+  Object.keys(D.records).forEach(k=>{if(k.startsWith(id))delete D.records[k]});
+  delete D.foodHistory[id];
+  D.activeChild=D.children.length?D.children[0].id:null;
+  save();closeM('mChild');render();
 }
 
-// Allergen management
-const COM_ALL=['牛奶','鸡蛋','小麦','大豆','花生','坚果','鱼','虾','蟹','芝麻','牛肉','羊肉'];
+// === ALLERGEN ===
 function showAllergenModal(){
   if(!gc()){toast('请先添加宝宝');return}
   selSev=null;document.getElementById('iAN').value='';
   ['svS','svM','svL'].forEach(id=>document.getElementById(id).className='sv-opt');
-  document.getElementById('rotDaysGroup').style.display='none';
   document.getElementById('mAllergen').classList.add('show');
   const el=document.getElementById('comAll');el.innerHTML='';
   COM_ALL.forEach(n=>{const ch=document.createElement('span');ch.className='cchip';ch.textContent=n;ch.onclick=()=>{document.getElementById('iAN').value=n};el.appendChild(ch)});
@@ -861,123 +811,292 @@ function pSev(s){
   document.getElementById('svS').className='sv-opt'+(s==='severe'?' ss':'');
   document.getElementById('svM').className='sv-opt'+(s==='moderate'?' sm':'');
   document.getElementById('svL').className='sv-opt'+(s==='mild'?' sl':'');
-  // Show rotation days for non-severe
-  const rg=document.getElementById('rotDaysGroup');
-  if(s==='severe'){rg.style.display='none'}
-  else{rg.style.display='block';document.getElementById('iRotDays').value=s==='moderate'?30:7}
 }
 function saveAllergen(){
   const name=document.getElementById('iAN').value.trim();
-  if(!name){toast('请输入名称');return}if(!selSev){toast('请选择程度');return}
+  if(!name){toast('请输入名称');return}
+  if(!selSev){toast('请选择程度');return}
   const c=gc(),names=name.split(/[,，、\s]+/).filter(n=>n.trim());
-  const rotDays=selSev==='severe'?0:parseInt(document.getElementById('iRotDays').value)||0;
   let ct=0;
-  names.forEach(n=>{n=n.trim();if(!n||c.allergens.some(a=>a.name===n))return;
-    c.allergens.push({name:n,severity:selSev,rotationDays:rotDays});ct++});
-  save();document.getElementById('iAN').value='';render();if(ct)toast(`已添加${ct}项`);
+  names.forEach(n=>{n=n.trim();if(!n||(c.allergens||[]).some(a=>a.name===n))return;
+    if(!c.allergens)c.allergens=[];
+    c.allergens.push({name:n,severity:selSev});ct++});
+  save();document.getElementById('iAN').value='';render();closeM('mAllergen');if(ct)toast(`已添加${ct}项`);
 }
 function rmAllergen(name){const c=gc();if(!c)return;c.allergens=c.allergens.filter(a=>a.name!==name);save();render()}
 
-// Report OCR
-const AKW=[
-  {kw:['牛奶','牛乳','乳蛋白','酪蛋白'],name:'牛奶'},{kw:['鸡蛋','蛋白','蛋黄','鸡蛋白'],name:'鸡蛋'},
-  {kw:['小麦','面粉','麸质'],name:'小麦'},{kw:['大豆','豆浆','黄豆'],name:'大豆'},
-  {kw:['花生'],name:'花生'},{kw:['虾','对虾'],name:'虾'},{kw:['蟹','螃蟹'],name:'蟹'},
-  {kw:['鳕鱼','鱼','淡水鱼','海水鱼'],name:'鱼'},{kw:['坚果','核桃','腰果','杏仁'],name:'坚果'},
-  {kw:['芝麻'],name:'芝麻'},{kw:['牛肉'],name:'牛肉'},{kw:['羊肉'],name:'羊肉'},
-  {kw:['猪肉'],name:'猪肉'},{kw:['鸡肉'],name:'鸡肉'},{kw:['西红柿','番茄'],name:'西红柿'},
-  {kw:['桃','桃子'],name:'桃'},{kw:['芒果'],name:'芒果'},{kw:['大米','稻米'],name:'大米'},
-  {kw:['玉米'],name:'玉米'},{kw:['土豆','马铃薯'],name:'土豆'},
-  {kw:['尘螨','粉尘螨','户尘螨'],name:'尘螨(吸入)'},{kw:['猫毛','猫皮屑'],name:'猫毛(吸入)'},
-  {kw:['狗毛','狗皮屑'],name:'狗毛(吸入)'},{kw:['霉菌','真菌'],name:'霉菌(吸入)'},{kw:['花粉'],name:'花粉(吸入)'},
-];
-const SP={severe:[/[+]{3,}/,/强阳/,/[56]级/,/重度/],moderate:[/[+]{2}(?![+])/,/[34]级/,/中度/],mild:[/[+](?![+])/,/弱阳/,/阳性/,/轻度/,/[12]级/],neg:[/阴性/,/阴/,/正常/,/0级/]};
-
-async function handleRp(ev){
-  const f=ev.target.files[0];if(!f)return;if(!gc()){toast('请先添加宝宝');ev.target.value='';return}
-  document.getElementById('mReport').classList.add('show');
-  document.getElementById('ocrLoad').style.display='block';document.getElementById('ocrRes').style.display='none';
-  document.getElementById('ocrBar').style.width='0%';document.getElementById('ocrSt').textContent='准备中...';
-  const reader=new FileReader();
-  reader.onload=async function(e){
-    document.getElementById('rpImg').src=e.target.result;
-    try{
-      document.getElementById('ocrSt').textContent='加载识别引擎...';document.getElementById('ocrBar').style.width='10%';
-      const w=await Tesseract.createWorker('chi_sim+eng',1,{logger:m=>{if(m.progress!==undefined){document.getElementById('ocrBar').style.width=(10+m.progress*80)+'%';if(m.status==='recognizing text')document.getElementById('ocrSt').textContent='识别中 '+Math.round(m.progress*100)+'%'}}});
-      const{data:{text}}=await w.recognize(e.target.result);await w.terminate();
-      document.getElementById('ocrBar').style.width='100%';parseRp(text);
-    }catch(err){document.getElementById('ocrSt').textContent='识别失败';setTimeout(()=>parseRp(''),800)}
-  };reader.readAsDataURL(f);ev.target.value='';
+// === PROFILE (inline in record page) ===
+function renderProfile(){
+  const c=gc(),card=document.getElementById('inlineProfile');
+  if(!c){card.style.display='none';return}
+  card.style.display='block';
+  document.getElementById('pfName').textContent=c.name;
+  let meta='';
+  if(c.birth){const m=Math.floor(dbt(td(),c.birth)/30),y=Math.floor(m/12);meta=y>0?`${y}岁${m%12}个月`:`${m}个月`;meta+=' · '+c.birth}
+  document.getElementById('pfMeta').textContent=meta;
+  const el=document.getElementById('pfSv');
+  const sv=(c.allergens||[]).filter(a=>a.severity==='severe');
+  if(!sv.length){el.innerHTML='';const sp=document.createElement('span');sp.style.cssText='font-size:11px;color:var(--sub)';sp.textContent='暂无';el.appendChild(sp);return}
+  el.innerHTML='';
+  sv.forEach(a=>{
+    const t=document.createElement('span');t.className='atag sv';
+    t.textContent='🚫 '+a.name;
+    const x=document.createElement('span');x.className='tx';x.textContent='✕';x.onclick=()=>rmAllergen(a.name);
+    t.appendChild(x);el.appendChild(t);
+  });
 }
 
-function parseRp(text){
-  ocrItems=[];const c=gc(),ex=c?c.allergens.map(a=>a.name):[];const lines=text.split('\n');
-  AKW.forEach(entry=>{
-    if(!entry.kw.some(k=>text.includes(k)))return;
-    let sev='mild',rotDays=7;
-    for(const line of lines){
-      if(!entry.kw.some(k=>line.includes(k)))continue;
-      for(const[s,pats]of Object.entries(SP)){if(pats.some(p=>p.test(line))){sev=s;break}}break;
+// === TIMELINE ===
+function renderTimeline(){
+  const c=gc(),body=document.getElementById('tlBody');
+  if(!c){body.innerHTML='<div class="eh"><div class="ei">📊</div>添加宝宝后这里会显示时间线</div>';return}
+  // Gather last 30 days
+  const days=[];
+  for(let i=0;i<30;i++){
+    const d=new Date();d.setDate(d.getDate()-i);const ds=fmt(d),k=c.id+'-'+ds,r=D.records[k];
+    if(r){
+      const foods=ML.flatMap(m=>(r[m]||[]).map(x=>({meal:MLN[m],food:typeof x==='string'?x:x.food,caregiver:typeof x==='object'?x.caregiver:'',time:typeof x==='object'?x.time:''})));
+      const syms=(r.symptoms||[]).map(s=>({name:s.name,time:s.time,severity:s.severity||3,caregiver:s.caregiver||''}));
+      if(foods.length||syms.length)days.push({date:ds,foods,symptoms:syms});
     }
-    if(sev==='severe')rotDays=0;else if(sev==='moderate')rotDays=30;else if(sev==='mild')rotDays=7;else rotDays=0;
-    ocrItems.push({name:entry.name,severity:sev,rotationDays:rotDays,exists:ex.includes(entry.name),checked:sev!=='neg'&&!ex.includes(entry.name)});
+  }
+  if(!days.length){body.innerHTML='<div class="eh"><div class="ei">📝</div>开始记录后这里会显示时间线</div>';return}
+  body.innerHTML='';
+  days.forEach(day=>{
+    const sec=document.createElement('div');sec.className='tl-day';
+    const dt=document.createElement('div');dt.className='tl-date';
+    const dd=new Date(day.date);
+    dt.textContent=`${dd.getMonth()+1}月${dd.getDate()}日 周${WK[dd.getDay()]}`;
+    sec.appendChild(dt);
+    // Foods
+    day.foods.forEach(f=>{
+      const item=document.createElement('div');item.className='tl-item';
+      const time=document.createElement('div');time.className='tl-time';time.textContent=f.time||'';
+      const icon=document.createElement('div');icon.className='tl-icon';icon.textContent='🍽️';
+      const content=document.createElement('div');content.className='tl-content';
+      const foodEl=document.createElement('div');foodEl.className='tl-foods';foodEl.textContent=f.meal+': '+f.food;
+      content.appendChild(foodEl);
+      if(f.caregiver&&f.caregiver!=='我自己'){
+        const cgEl=document.createElement('div');cgEl.className='tl-cg';cgEl.textContent='👤 '+f.caregiver;
+        content.appendChild(cgEl);
+      }
+      item.appendChild(time);item.appendChild(icon);item.appendChild(content);sec.appendChild(item);
+    });
+    // Symptoms
+    day.symptoms.forEach(s=>{
+      const item=document.createElement('div');item.className='tl-item';
+      const time=document.createElement('div');time.className='tl-time';time.textContent=s.time||'';
+      const icon=document.createElement('div');icon.className='tl-icon';icon.textContent='⚠️';
+      const content=document.createElement('div');content.className='tl-content';
+      const symEl=document.createElement('div');symEl.className='tl-sym';symEl.textContent=s.name+' (严重度'+s.severity+')';
+      content.appendChild(symEl);
+      if(s.caregiver){const cgEl=document.createElement('div');cgEl.className='tl-cg';cgEl.textContent='👤 '+s.caregiver;content.appendChild(cgEl)}
+      item.appendChild(time);item.appendChild(icon);item.appendChild(content);sec.appendChild(item);
+    });
+    body.appendChild(sec);
   });
-  ocrItems.sort((a,b)=>{const o={severe:0,moderate:1,mild:2,neg:3};return(o[a.severity]||2)-(o[b.severity]||2)});
-  document.getElementById('ocrLoad').style.display='none';document.getElementById('ocrRes').style.display='block';renderOcr();
 }
 
-function renderOcr(){
-  const list=document.getElementById('ocrList');
-  if(!ocrItems.length){document.getElementById('ocrEmp').style.display='block';document.getElementById('ocrConfBtn').style.display='none';return}
-  document.getElementById('ocrEmp').style.display='none';document.getElementById('ocrConfBtn').style.display='block';
-  list.innerHTML='';
-  ocrItems.forEach((it,i)=>{
-    const row=document.createElement('div');row.className='ocr-row';
-    row.innerHTML=`<input type="checkbox" class="ocr-ck" ${it.checked?'checked':''} ${it.exists?'disabled':''} onchange="ocrItems[${i}].checked=this.checked">
-      <div class="ocr-n">${it.name}${it.exists?' <span style="font-size:10px;color:var(--sub)">(已有)</span>':''} ${it.severity!=='neg'&&it.severity!=='severe'?'<span style="font-size:10px;color:var(--sub)">'+it.rotationDays+'天</span>':''}</div>
-      <div class="ocr-sb">
-        <button class="${it.severity==='severe'?'os':''}" onclick="setOcr(${i},'severe',0)">重</button>
-        <button class="${it.severity==='moderate'?'om':''}" onclick="setOcr(${i},'moderate',30)">中</button>
-        <button class="${it.severity==='mild'?'ol':''}" onclick="setOcr(${i},'mild',7)">轻</button>
-        <button class="${it.severity==='neg'?'on':''}" onclick="setOcr(${i},'neg',0)">阴</button>
-      </div>`;
-    list.appendChild(row);
-  });
-}
-
-function setOcr(i,s,r){ocrItems[i].severity=s;ocrItems[i].rotationDays=r;ocrItems[i].checked=s!=='neg'&&!ocrItems[i].exists;renderOcr()}
-function confirmOcr(){
-  const c=gc();if(!c)return;
-  const add=ocrItems.filter(r=>r.checked&&!r.exists&&r.severity!=='neg');
-  if(!add.length){toast('未选择');return}
-  add.forEach(it=>{if(!c.allergens.some(a=>a.name===it.name))c.allergens.push({name:it.name,severity:it.severity,rotationDays:it.rotationDays})});
-  save();closeM('mReport');render();toast(`已添加${add.length}项`);
-}
-
-// Data
+// === SHARE / EXPORT ===
 function getExpData(){const e=JSON.parse(JSON.stringify(D));e._exported=td();return JSON.stringify(e,null,2)}
-function exportData(){const b=new Blob([getExpData()],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='敏宝数据_'+td()+'.json';a.click();D._lastBackup=td();save();toast('已导出')}
-async function shareData(){
-  const t=getExpData();
-  if(navigator.share){try{const b=new Blob([t],{type:'application/json'}),f=new File([b],'敏宝数据_'+td()+'.json',{type:'application/json'});await navigator.share({title:'敏宝饮食管家备份',files:[f]});D._lastBackup=td();save();toast('已分享');return}catch(e){if(e.name!=='AbortError'){try{await navigator.share({title:'敏宝备份',text:t});D._lastBackup=td();save();toast('已分享');return}catch(e2){}}return}}
-  try{await navigator.clipboard.writeText(t);D._lastBackup=td();save();toast('已复制到剪贴板')}catch(e){prompt('复制以下内容：',t.substring(0,500)+'...')}
+
+function buildDayCard(){
+  const c=gc();if(!c)return'';
+  const ds=td(),rec=D.records[c.id+'-'+ds];
+  if(!rec)return'(今天暂无记录)';
+  let text=`🍼 ${c.name} · ${new Date().getMonth()+1}月${new Date().getDate()}日 饮食记录\n\n`;
+  ML.forEach(m=>{
+    const items=(rec[m]||[]).map(x=>typeof x==='string'?x:x.food);
+    if(items.length)text+=`${MLN[m]}：${items.join('、')}\n`;
+  });
+  if(rec.symptoms&&rec.symptoms.length){
+    text+='\n⚠️ 异常反应：\n';
+    rec.symptoms.forEach(s=>{text+=`  ${s.time||''} ${s.name} (严重度${s.severity||3})\n`});
+  }
+  text+='\n— 敏宝饮食管家';
+  return text;
 }
-function importData(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=function(e){try{const d=JSON.parse(e.target.result);if(d.children){if(!d.foodHistory)d.foodHistory={};d._v=VER;D=d;save();render();toast('已导入');}else toast('格式错误')}catch(e){toast('导入失败')}};r.readAsText(f);ev.target.value=''}
 
-// Modal
-function closeM(id){document.getElementById(id).classList.remove('show')}
-document.querySelectorAll('.mo').forEach(el=>{el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('show')})});
+async function doShare(type){
+  if(type==='card'){
+    const text=buildDayCard();
+    if(navigator.share){
+      try{await navigator.share({title:'今日喂养卡片',text});toast('已分享');return}catch(e){if(e.name==='AbortError')return}
+    }
+    // Fallback: download as text
+    const b=new Blob([text],{type:'text/plain'});const a=document.createElement('a');
+    a.href=URL.createObjectURL(b);a.download='今日喂养_'+td()+'.txt';a.click();
+    toast('已保存到文件');
+  }else{
+    // Backup
+    const data=getExpData();
+    if(navigator.share){
+      try{
+        const b=new Blob([data],{type:'application/json'});
+        const f=new File([b],'敏宝数据_'+td()+'.json',{type:'application/json'});
+        await navigator.share({title:'敏宝饮食管家备份',files:[f]});
+        D._lastBackup=td();save();toast('备份成功');
+        document.getElementById('bannerRed').classList.remove('show');
+        return;
+      }catch(e){if(e.name==='AbortError')return}
+    }
+    // Fallback: download
+    const b=new Blob([data],{type:'application/json'});const a=document.createElement('a');
+    a.href=URL.createObjectURL(b);a.download='敏宝数据_'+td()+'.json';a.click();
+    D._lastBackup=td();save();toast('已保存到文件');
+    document.getElementById('bannerRed').classList.remove('show');
+  }
+}
 
-// Backup reminder
+function exportJSON(){
+  const data=getExpData();
+  if(navigator.share){
+    const b=new Blob([data],{type:'application/json'});
+    const f=new File([b],'敏宝数据_'+td()+'.json',{type:'application/json'});
+    navigator.share({title:'敏宝数据',files:[f]}).then(()=>{D._lastBackup=td();save();toast('已分享')}).catch(()=>{});
+    return;
+  }
+  const b=new Blob([data],{type:'application/json'});const a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download='敏宝数据_'+td()+'.json';a.click();
+  D._lastBackup=td();save();toast('已导出 JSON');
+}
+
+function exportCSV(){
+  const c=gc();if(!c){toast('请先选择宝宝');return}
+  let csv='日期,餐次,食物,喂养人,时间,类型,症状,严重度\n';
+  Object.keys(D.records).filter(k=>k.startsWith(c.id)).sort().reverse().forEach(k=>{
+    const ds=k.replace(c.id+'-',''),rec=D.records[k];
+    ML.forEach(m=>{(rec[m]||[]).forEach(item=>{
+      const f=typeof item==='string'?item:item.food;
+      const cg=typeof item==='object'?item.caregiver:'';
+      const t=typeof item==='object'?item.time:'';
+      csv+=`${ds},${MLN[m]},${f},${cg},${t},食物,,\n`;
+    })});
+    (rec.symptoms||[]).forEach(s=>{
+      csv+=`${ds},,,,${s.time||''},症状,${s.name},${s.severity||3}\n`;
+    });
+  });
+  if(navigator.share){
+    const b=new Blob(['\uFEFF'+csv],{type:'text/csv'});
+    const f=new File([b],'敏宝记录_'+td()+'.csv',{type:'text/csv'});
+    navigator.share({title:'敏宝记录CSV',files:[f]}).catch(()=>{});
+    return;
+  }
+  const b=new Blob(['\uFEFF'+csv],{type:'text/csv'});const a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download='敏宝记录_'+td()+'.csv';a.click();
+  toast('已导出 CSV');
+}
+
+// === IMPORT (merge, not overwrite) ===
+function handleImport(ev){
+  const f=ev.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=function(e){
+    try{
+      const d=JSON.parse(e.target.result);
+      if(!d.children){toast('格式错误');return}
+      pendingImportData=d;
+      const info=document.getElementById('importInfo');
+      info.textContent=`文件包含 ${d.children.length} 个宝宝，${Object.keys(d.records||{}).length} 条记录。当前数据有 ${D.children.length} 个宝宝，${Object.keys(D.records).length} 条记录。`;
+      document.getElementById('mImport').classList.add('show');
+    }catch(e){toast('导入失败: JSON 格式错误')}
+  };
+  r.readAsText(f);ev.target.value='';
+}
+
+function doImport(mode){
+  if(!pendingImportData)return;
+  if(mode==='replace'){
+    migrateData(pendingImportData);
+    save();render();toast('已覆盖导入');
+  }else{
+    // Merge
+    const imp=pendingImportData;
+    // Merge children
+    (imp.children||[]).forEach(ic=>{
+      if(!D.children.some(c=>c.id===ic.id)){D.children.push(ic)}
+      else{
+        // Merge allergens
+        const existing=D.children.find(c=>c.id===ic.id);
+        (ic.allergens||[]).forEach(a=>{
+          if(!(existing.allergens||[]).some(ea=>ea.name===a.name)){
+            if(!existing.allergens)existing.allergens=[];
+            existing.allergens.push(a);
+          }
+        });
+      }
+    });
+    // Merge records (keep both, prefer newer)
+    Object.keys(imp.records||{}).forEach(k=>{
+      if(!D.records[k]){D.records[k]=imp.records[k]}
+      else{
+        // Merge food lists
+        ML.forEach(m=>{
+          const existing=(D.records[k][m]||[]).map(x=>typeof x==='string'?x:(x.food||''));
+          (imp.records[k][m]||[]).forEach(item=>{
+            const f=typeof item==='string'?item:(item.food||'');
+            if(!existing.includes(f)){if(!D.records[k][m])D.records[k][m]=[];D.records[k][m].push(item)}
+          });
+        });
+        // Merge symptoms
+        const existingSym=(D.records[k].symptoms||[]).map(s=>s.name+s.time);
+        (imp.records[k].symptoms||[]).forEach(s=>{
+          if(!existingSym.includes(s.name+(s.time||''))){
+            if(!D.records[k].symptoms)D.records[k].symptoms=[];
+            D.records[k].symptoms.push(s);
+          }
+        });
+      }
+    });
+    // Merge food history
+    Object.keys(imp.foodHistory||{}).forEach(k=>{
+      if(!D.foodHistory[k])D.foodHistory[k]=imp.foodHistory[k];
+      else{
+        (imp.foodHistory[k]||[]).forEach(f=>{if(!D.foodHistory[k].includes(f))D.foodHistory[k].push(f)});
+      }
+    });
+    if(!D.activeChild&&D.children.length)D.activeChild=D.children[0].id;
+    save();render();toast('已合并导入');
+  }
+  pendingImportData=null;
+  closeM('mImport');
+}
+
+// === BACKUP REMINDER ===
 function chkBackup(){
   if(!D.activeChild||!D.children.length)return;
   const rc=Object.keys(D.records).filter(k=>{const r=D.records[k];return r&&(ML.some(m=>(r[m]||[]).length>0))}).length;
-  if(rc<3)return;const da=D._lastBackup?dbt(td(),D._lastBackup):999;
-  if(da>=7)setTimeout(()=>{if(document.querySelector('.mo.show'))return;document.getElementById('bkDays').textContent=da>=999?'从未备份过':`已有${da}天未备份`;document.getElementById('bkCnt').textContent=`共${rc}天记录`;document.getElementById('mBackup').classList.add('show')},1500);
+  if(rc<3)return;
+  const da=D._lastBackup?dbt(td(),D._lastBackup):999;
+  if(da>=7)setTimeout(()=>{
+    if(document.querySelector('.mo.show'))return;
+    document.getElementById('bkDays').textContent=da>=999?'从未备份过':`已有${da}天未备份`;
+    document.getElementById('bkCnt').textContent=`共${rc}天记录`;
+    document.getElementById('mBackup').classList.add('show');
+  },1500);
 }
 
-// Init
-load();render();chkBackup();
+// === MODALS ===
+function closeM(id){document.getElementById(id).classList.remove('show')}
+document.querySelectorAll('.mo').forEach(el=>{el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('show')})});
+
+// === INIT ===
+async function init(){
+  await load();
+  render();
+  checkBanners();
+  checkPersist();
+  chkBackup();
+  // Show onboarding if no children
+  if(!D.children.length){
+    setTimeout(()=>document.getElementById('mOnboard').classList.add('show'),300);
+  }
+  // Register service worker
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+}
+init();
 </script>
 </body>
 </html>

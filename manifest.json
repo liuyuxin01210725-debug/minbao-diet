@@ -1,0 +1,19 @@
+{
+  "name": "敏宝饮食管家",
+  "short_name": "敏宝饮食",
+  "description": "帮助过敏宝宝家庭记录饮食和症状",
+  "start_url": "./敏宝饮食管家.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F5F6F8",
+  "theme_color": "#4A90A4",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍼</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
