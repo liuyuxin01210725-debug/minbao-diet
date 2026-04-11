@@ -711,8 +711,14 @@ function renderPk(){
     }
     if(!hist.includes(q)&&!cur.includes(q)){
       const d=document.createElement('div');d.style.padding='6px 0';
-      const b=document.createElement('div');b.className='pk-item cadd';b.textContent='+ 添加「'+q+'」';b.onclick=()=>pickF(q);
-      d.appendChild(b);bd.appendChild(d);
+      if(sevNames.includes(q)){
+        const b=document.createElement('div');b.className='pk-item dis';b.textContent='🚫 '+q+'（已标记为严重过敏原）';
+        d.appendChild(b);
+      }else{
+        const b=document.createElement('div');b.className='pk-item cadd';b.textContent='+ 添加「'+q+'」';b.onclick=()=>pickF(q);
+        d.appendChild(b);
+      }
+      bd.appendChild(d);
     }
     return;
   }
