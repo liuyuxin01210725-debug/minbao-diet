@@ -145,6 +145,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans G
 .tip{background:#F0F7FF;border-left:3px solid var(--pri);padding:8px 10px;border-radius:0 8px 8px 0;font-size:11px;color:#4A6B8A;line-height:1.5}
 .eh{text-align:center;padding:28px 18px;color:var(--sub);font-size:13px;line-height:1.5}
 .eh .ei{font-size:36px;margin-bottom:6px}
+/* AI Analysis */
+.ai-bar{margin:0 14px 14px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:var(--r);padding:14px 16px;color:#fff;display:flex;align-items:center;gap:12px;cursor:pointer;box-shadow:0 2px 8px rgba(102,126,234,.3)}
+.ai-bar:active{transform:scale(.98)}
+.ai-bar .ai-icon{font-size:24px;flex-shrink:0}
+.ai-bar .ai-text{flex:1}
+.ai-bar .ai-title{font-size:14px;font-weight:600}
+.ai-bar .ai-desc{font-size:11px;opacity:.85;margin-top:2px}
+.ai-bar .ai-arrow{font-size:16px;opacity:.7}
+.ai-step{display:flex;gap:12px;margin-bottom:14px;align-items:flex-start}
+.ai-step-num{width:24px;height:24px;border-radius:50%;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;margin-top:1px}
+.ai-step-content{flex:1}
+.ai-step-title{font-size:13px;font-weight:600;margin-bottom:2px}
+.ai-step-desc{font-size:11px;color:var(--sub);line-height:1.5}
+.ai-code{background:var(--bg);border-radius:8px;padding:10px 12px;font-family:monospace;font-size:11px;color:var(--text);margin-top:6px;word-break:break-all;line-height:1.5;white-space:pre-wrap}
+.ai-refs{margin-top:12px;padding-top:10px;border-top:1px solid var(--bdr);font-size:10px;color:var(--sub);line-height:1.6}
 /* Timeline */
 .tl-day{margin:0 14px 12px}
 .tl-date{font-size:13px;font-weight:600;color:var(--sub);padding:4px 0 6px}
@@ -230,6 +245,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans G
     </div>
   </div>
   <div class="cbar" id="tlCB"></div>
+  <!-- AI Analysis Entry -->
+  <div class="ai-bar" onclick="showAIModal()">
+    <div class="ai-icon">🧠</div>
+    <div class="ai-text">
+      <div class="ai-title">AI 过敏分析</div>
+      <div class="ai-desc">基于医学指南，生成食物-症状关联报告</div>
+    </div>
+    <div class="ai-arrow">›</div>
+  </div>
   <div id="tlBody" style="padding-top:10px;"></div>
 </div>
 
@@ -348,6 +372,57 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans G
     <div style="font-size:11px;color:var(--sub);margin-bottom:14px" id="bkCnt"></div>
     <button class="btn btn-p btn-f" onclick="closeM('mBackup');doShare('backup')">一键备份</button>
     <button class="btn btn-o btn-f" style="margin-top:6px" onclick="closeM('mBackup')">下次再说</button>
+  </div>
+</div>
+
+<!-- AI Analysis Modal -->
+<div class="mo" id="mAI">
+  <div class="mo-c" style="max-height:85vh">
+    <div class="mo-t"><span>🧠 AI 过敏分析</span><button class="mo-x" onclick="closeM('mAI')">✕</button></div>
+    <div class="tip" style="margin-bottom:14px">基于 NIAID、ESPGHAN、PRACTALL 等权威临床指南，分析食物与症状的时间关联。AI 不做诊断，只整理数据供医生参考。</div>
+
+    <div class="ai-step">
+      <div class="ai-step-num">1</div>
+      <div class="ai-step-content">
+        <div class="ai-step-title">一键导出分析包</div>
+        <div class="ai-step-desc">导出包含你的记录数据 + 医学分析模板的完整文件，可直接发送给任何 AI 大模型。</div>
+        <button class="btn btn-p" style="margin-top:8px;width:100%" onclick="exportAnalysisPack()">📦 导出分析包</button>
+      </div>
+    </div>
+
+    <div class="ai-step">
+      <div class="ai-step-num">2</div>
+      <div class="ai-step-content">
+        <div class="ai-step-title">发送给 AI 分析</div>
+        <div class="ai-step-desc">打开任意一个大模型（推荐 Claude），将导出的文件内容粘贴发送即可获取分析报告。</div>
+        <div class="ai-code">支持的大模型：
+• Claude（claude.ai）— 推荐
+• ChatGPT（chatgpt.com）
+• Gemini（gemini.google.com）
+• 或任何支持长文本的 AI</div>
+      </div>
+    </div>
+
+    <div class="ai-step">
+      <div class="ai-step-num">3</div>
+      <div class="ai-step-content">
+        <div class="ai-step-title">获取结构化报告</div>
+        <div class="ai-step-desc">AI 会按照模板生成包含以下内容的报告：食物-症状时间关联、安全食材清单、新引入食材追踪、就诊建议。可以打印后带给医生参考。</div>
+      </div>
+    </div>
+
+    <div style="margin-top:6px;display:flex;gap:6px">
+      <button class="btn btn-o btn-f" onclick="copyAnalysisPack()">📋 复制到剪贴板</button>
+    </div>
+
+    <div class="ai-refs">
+      <strong>分析模板依据的医学指南：</strong><br>
+      • JAMA 2024 — 食物过敏管理（DOI:10.1001/jama.2023.26857）<br>
+      • ESPGHAN 2024 — 牛奶过敏立场文件<br>
+      • AAAAI-EAACI PRACTALL 2024 — 口服激发标准化<br>
+      • NIAID 2010 — 食物过敏诊疗指南<br>
+      • Meyer et al. PAI 2025 — 非IgE介导食物过敏更新
+    </div>
   </div>
 </div>
 
@@ -895,6 +970,195 @@ function renderTimeline(){
     });
     body.appendChild(sec);
   });
+}
+
+// === AI ANALYSIS ===
+const ANALYSIS_PROMPT=`你是一个儿童食物过敏饮食日记分析工具。你的职责是对家长记录的饮食和症状数据进行结构化分析，帮助家长在就诊时向医生提供清晰的数据报告。
+
+## 你的身份
+
+你不是医生。你不能诊断过敏。你是一个数据分析工具，按照已发表的临床指南中的时间参数，对食物与症状的时间关联进行统计和标注。
+
+## 核心医学参数
+
+以下参数来自已发表的临床指南：
+
+### 反应时间窗口
+- IgE 介导（速发型）：进食后 0-2 小时（JAMA 2024; DOI:10.1001/jama.2023.26857）
+- 非 IgE 介导（迟发型）：进食后 2 小时至数天（AAFP 2023; Meyer et al. PAI 2025; DOI:10.1111/pai.70060）
+- FPIES（急性）：进食后 1-4 小时（AAAAI-EAACI PRACTALL 2024; DOI:10.1111/pai.14276）
+- 过敏性直肠结肠炎（FPIAP）：数天（JAMA 2024; DOI:10.1001/jama.2023.26857）
+
+### 排除饮食与再引入
+- 排除饮食观察期（非 IgE）：2-4 周（ESPGHAN 2024; DOI:10.1097/MPG.0000000000003897）
+- 排除饮食观察期（IgE）：1-2 周（ESPGHAN 2024）
+- 再引入观察期：连续 7 天每日接触（ESPGHAN 2024）
+- 诊断金标准：口服食物激发试验 OFC（NIAID 2010; DOI:10.1016/j.jaci.2010.10.007）
+
+## 分析规则
+
+### 1. 时间关联检测
+对于每一条症状记录，向前搜索所有在以下时间窗口内摄入的食材：
+- 急性窗口（0-2h）：标注为"速发型时间关联"
+- 延迟窗口（2-72h）：标注为"迟发型时间关联"
+
+### 2. 频率统计
+- 高频关联：同一食材-症状组合出现 ≥3 次
+- 中频关联：出现 2 次
+- 低频关联：仅出现 1 次
+
+### 3. 安全食材识别
+满足以下条件的食材标记为"观察期内未见关联"：
+- 在数据期间内摄入 ≥3 次
+- 摄入后 72 小时内未记录任何症状
+
+### 4. 新食材标记
+标记数据期间内首次出现的食材及其引入日期。
+
+### 5. 严重程度加权
+如果数据中包含症状严重程度（1-5 级）：
+- 4-5 级症状的关联优先报告
+- 标注严重程度变化趋势
+
+## 输出格式
+
+严格按照以下格式输出，不要增减章节。
+
+---
+
+# 饮食分析报告
+
+**宝宝**: {名字}
+**年龄**: {月龄}
+**分析周期**: {起始日期} 至 {结束日期}（共 {N} 天）
+**数据概况**: {总记录天数} 天有记录，{总食材种类} 种食材，{总症状次数} 次症状
+
+---
+
+## 一、疑似食物-症状时间关联
+
+> 以下关联基于时间窗口统计，不构成过敏诊断。确诊需医生进行口服食物激发试验（OFC）。
+
+### 高频关联（≥3 次）
+| 食材 | 症状 | 出现次数 | 关联类型 | 典型间隔 | 严重程度范围 |
+|------|------|---------|---------|---------|------------|
+
+### 中频关联（2 次）
+| 食材 | 症状 | 出现次数 | 关联类型 | 典型间隔 | 严重程度范围 |
+|------|------|---------|---------|---------|------------|
+
+### 详细时间线
+按时间顺序列出每次关联事件：
+- **{日期}** {时间} 摄入「{食材}」({餐次}, 喂养人: {看护人}) → {间隔}小时后 {时间} 出现「{症状}」(严重程度: {N}/5)
+
+## 二、安全食材（观察期内未见关联）
+| 食材 | 摄入次数 | 首次记录 | 最近记录 |
+|------|---------|---------|---------|
+
+## 三、新引入食材
+| 食材 | 首次引入日期 | 引入后 72h 内症状 |
+|------|-----------|----------------|
+
+## 四、喂养人分布
+| 喂养人 | 记录次数 | 关联症状次数 | 备注 |
+|--------|---------|-----------|------|
+
+## 五、建议就诊讨论要点
+基于以上数据，建议与医生讨论：
+1. {具体建议}
+
+## 六、数据局限性说明
+- 本报告基于家长自行记录的数据，可能存在记录遗漏
+- 时间关联不等于因果关系
+- 症状可能由食物以外的因素引起（如感染、环境等）
+- 确诊食物过敏需由专业医生通过口服食物激发试验（OFC）进行
+
+---
+
+**参考指南**:
+1. Iglesia et al. JAMA 2024;331(6):510-521. DOI:10.1001/jama.2023.26857
+2. Sampson et al. JACI 2014;134(5):1016-25. DOI:10.1016/j.jaci.2014.05.013
+3. AAAAI-EAACI PRACTALL 2024. PAI 2024;35(11):e14276
+4. ESPGHAN CMA Position Paper 2024
+5. Meyer et al. PAI 2025;36(3):e70060. DOI:10.1111/pai.70060
+6. NIAID Guidelines 2010. JACI 2010;126(6):S1-S58. DOI:10.1016/j.jaci.2010.10.007
+
+**免责声明**: 本报告由 AI 工具生成，仅供参考，不构成医学诊断或治疗建议。所有发现均应与儿科过敏专科医生讨论确认。`;
+
+function showAIModal(){
+  if(!gc()){toast('请先添加宝宝');return}
+  const rc=Object.keys(D.records).filter(k=>k.startsWith(gc().id)).length;
+  if(rc<1){toast('请先记录几天数据再分析');return}
+  document.getElementById('mAI').classList.add('show');
+}
+
+function buildAnalysisPack(){
+  const c=gc();if(!c)return'';
+  const data=JSON.parse(JSON.stringify(D));
+  data._exported=td();
+  // Build summary header
+  const allKeys=Object.keys(data.records).filter(k=>k.startsWith(c.id)).sort();
+  const totalDays=allKeys.length;
+  const allFoods=new Set();
+  let totalSymptoms=0;
+  allKeys.forEach(k=>{
+    const r=data.records[k];
+    ML.forEach(m=>(r[m]||[]).forEach(x=>allFoods.add(typeof x==='string'?x:x.food)));
+    totalSymptoms+=(r.symptoms||[]).length;
+  });
+  const firstDate=allKeys.length?allKeys[0].replace(c.id+'-',''):'';
+  const lastDate=allKeys.length?allKeys[allKeys.length-1].replace(c.id+'-',''):'';
+  const months=c.birth?Math.floor(dbt(td(),c.birth)/30):'未知';
+
+  let pack='# 敏宝饮食管家 — AI 分析包\n\n';
+  pack+='> 请将以下全部内容发送给 AI 大模型（如 Claude、ChatGPT），即可获得结构化分析报告。\n\n';
+  pack+='---\n\n';
+  pack+='## 分析指令（System Prompt）\n\n';
+  pack+=ANALYSIS_PROMPT;
+  pack+='\n\n---\n\n';
+  pack+='## 待分析数据\n\n';
+  pack+='**宝宝**: '+c.name+'\n';
+  pack+='**月龄**: '+months+'个月\n';
+  pack+='**分析周期**: '+firstDate+' 至 '+lastDate+'（'+totalDays+'天有记录）\n';
+  pack+='**食材种类**: '+allFoods.size+'种\n';
+  pack+='**症状记录**: '+totalSymptoms+'次\n';
+  if(c.allergens&&c.allergens.length){
+    pack+='**已知过敏原**: '+c.allergens.map(a=>a.name+'('+({severe:'重度',moderate:'中度',mild:'轻度'}[a.severity]||a.severity)+')').join('、')+'\n';
+  }
+  pack+='\n```json\n'+JSON.stringify(data,null,2)+'\n```\n';
+  return pack;
+}
+
+function exportAnalysisPack(){
+  const pack=buildAnalysisPack();
+  if(!pack)return;
+  const c=gc();
+  const fname='敏宝分析包_'+c.name+'_'+td()+'.md';
+  if(navigator.share){
+    const b=new Blob([pack],{type:'text/markdown'});
+    const f=new File([b],fname,{type:'text/markdown'});
+    navigator.share({title:'敏宝 AI 分析包',files:[f]}).then(()=>toast('已分享')).catch(()=>{});
+    return;
+  }
+  const b=new Blob([pack],{type:'text/markdown'});const a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download=fname;a.click();
+  toast('分析包已导出');
+}
+
+async function copyAnalysisPack(){
+  const pack=buildAnalysisPack();
+  if(!pack)return;
+  try{
+    await navigator.clipboard.writeText(pack);
+    toast('已复制到剪贴板，可直接粘贴给 AI');
+  }catch(e){
+    // Fallback
+    const ta=document.createElement('textarea');
+    ta.value=pack;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');document.body.removeChild(ta);
+    toast('已复制到剪贴板');
+  }
 }
 
 // === SHARE / EXPORT ===
