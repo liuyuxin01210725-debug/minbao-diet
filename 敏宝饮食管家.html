@@ -160,6 +160,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans G
 .ai-step-desc{font-size:11px;color:var(--sub);line-height:1.5}
 .ai-code{background:var(--bg);border-radius:8px;padding:10px 12px;font-family:monospace;font-size:11px;color:var(--text);margin-top:6px;word-break:break-all;line-height:1.5;white-space:pre-wrap}
 .ai-refs{margin-top:12px;padding-top:10px;border-top:1px solid var(--bdr);font-size:10px;color:var(--sub);line-height:1.6}
+/* OCR Preview */
+.ocr-row{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:var(--bg);margin-bottom:6px}
+.ocr-name{flex:1;font-size:13px;font-weight:500}
+.ocr-val{font-size:11px;color:var(--sub);min-width:60px}
+.ocr-sev{padding:4px 10px;border-radius:14px;font-size:11px;cursor:pointer;border:none;font-weight:500;min-height:28px}
+.ocr-sev.sv{background:var(--red-l);color:var(--red)}.ocr-sev.ml{background:var(--pur-l);color:var(--pur)}
+.ocr-del{width:28px;height:28px;border-radius:50%;border:none;background:none;color:var(--sub);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.ocr-del:active{background:var(--red-l);color:var(--red)}
+.ocr-upd{font-size:10px;color:var(--org);margin-left:4px}
 /* Timeline */
 .tl-day{margin:0 14px 12px}
 .tl-date{font-size:13px;font-weight:600;color:var(--sub);padding:4px 0 6px}
@@ -226,6 +235,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans G
       </div>
       <div style="margin-top:6px;display:flex;gap:6px">
         <button class="btn btn-s btn-o" onclick="showAllergenModal()">+ 过敏原</button>
+        <button class="btn btn-s btn-o" onclick="showOCR()" id="btnOCR">📷 导入报告</button>
         <button class="btn btn-s btn-o" onclick="doShare('backup')">📤 备份</button>
       </div>
     </div>
@@ -423,6 +433,61 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans G
       • AAAAI-EAACI PRACTALL 2024 — 口服激发标准化<br>
       • NIAID 2010 — 食物过敏诊疗指南<br>
       • Meyer et al. PAI 2025 — 非IgE介导食物过敏更新
+    </div>
+  </div>
+</div>
+
+<!-- OCR Import Modal -->
+<div class="mo" id="mOCR">
+  <div class="mo-c" style="max-height:85vh">
+    <div class="mo-t"><span>📷 导入过敏原报告</span><button class="mo-x" onclick="closeM('mOCR')">✕</button></div>
+
+    <!-- Step 1 -->
+    <div id="ocrS1">
+      <div class="tip" style="margin-bottom:14px">拍照 → 发给 AI → 粘贴结果 → 一键导入。和 AI 分析包一样的流程，3 分钟搞定。</div>
+
+      <div class="ai-step">
+        <div class="ai-step-num">1</div>
+        <div class="ai-step-content">
+          <div class="ai-step-title">准备报告照片</div>
+          <div class="ai-step-desc">用手机拍好过敏原检测报告（保存在相册中），确保文字清晰可读。</div>
+        </div>
+      </div>
+
+      <div class="ai-step">
+        <div class="ai-step-num">2</div>
+        <div class="ai-step-content">
+          <div class="ai-step-title">复制识别 Prompt</div>
+          <div class="ai-step-desc">点击下方按钮复制 prompt，然后打开任意能处理图片的 AI（推荐 ChatGPT、Claude 或 Kimi），上传报告照片并粘贴 prompt。</div>
+          <button class="btn btn-p" style="margin-top:8px;width:100%" onclick="copyOCRPrompt()">📋 复制识别 Prompt</button>
+          <div class="ai-code" style="margin-top:6px">支持的多模态 AI：
+• ChatGPT（需 4o 或 Plus）
+• Claude（claude.ai）
+• Kimi（kimi.moonshot.cn）免费
+• 或任何能看图的 AI</div>
+        </div>
+      </div>
+
+      <div class="ai-step">
+        <div class="ai-step-num">3</div>
+        <div class="ai-step-content">
+          <div class="ai-step-title">粘贴 AI 返回的结果</div>
+          <div class="ai-step-desc">复制 AI 返回的完整内容，粘贴到下方文本框：</div>
+          <textarea class="fi" id="ocrInput" rows="6" style="margin-top:8px;font-family:monospace;font-size:12px;resize:vertical" placeholder='将 AI 返回的 JSON 结果粘贴到这里...'></textarea>
+          <div id="ocrErr" style="display:none;margin-top:6px;padding:8px 10px;background:var(--red-l);border-radius:8px;font-size:11px;color:var(--red)"></div>
+          <button class="btn btn-p" style="margin-top:8px;width:100%" onclick="parseOCR()">🔍 解析</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Preview -->
+    <div id="ocrS2" style="display:none">
+      <div id="ocrSummary" style="padding:8px 12px;background:var(--pri-l);border-radius:10px;font-size:13px;color:var(--pri-d);margin-bottom:12px"></div>
+      <div id="ocrList" style="margin-bottom:12px"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-o" style="flex:1" onclick="ocrBack()">← 返回修改</button>
+        <button class="btn btn-p" style="flex:1" onclick="doOCRImport()">✅ 确认导入</button>
+      </div>
     </div>
   </div>
 </div>
@@ -906,6 +971,131 @@ function saveAllergen(){
   save();document.getElementById('iAN').value='';render();closeM('mAllergen');if(ct)toast(`已添加${ct}项`);
 }
 function rmAllergen(name){const c=gc();if(!c)return;c.allergens=c.allergens.filter(a=>a.name!==name);save();render()}
+
+// === OCR IMPORT ===
+let ocrParsed=null;
+const OCR_PROMPT=`你是一个过敏原检测报告识别工具。请识别下面这张过敏原检测报告图片中的所有过敏原项目。
+
+## 输出要求
+
+请以严格 JSON 格式输出，不要包含其他文字：
+
+{
+  "allergens": [
+    {
+      "name": "牛奶",
+      "value": "3.5",
+      "unit": "kU/L",
+      "level": "3级",
+      "severity": "severe"
+    }
+  ]
+}
+
+## 严重度映射规则
+- severe（重度）：IgE ≥ 3.5 kU/L 或 3级及以上 或 +++
+- mild（轻度）：IgE 0.35-3.5 kU/L 或 1-2级 或 +/++
+- negative（阴性）：IgE < 0.35 kU/L 或 0级 或 -（不需要输出）
+
+## 注意
+- 只提取食物相关过敏原（忽略尘螨、花粉等吸入性过敏原）
+- 如果有总 IgE，忽略
+- 保留原始数值和单位
+- severity 只能是 "severe" 或 "mild"，不要输出 negative 的项`;
+
+function showOCR(){
+  if(!gc()){toast('请先添加宝宝');return}
+  ocrParsed=null;
+  document.getElementById('ocrInput').value='';
+  document.getElementById('ocrErr').style.display='none';
+  document.getElementById('ocrS1').style.display='block';
+  document.getElementById('ocrS2').style.display='none';
+  document.getElementById('mOCR').classList.add('show');
+}
+
+function copyOCRPrompt(){
+  navigator.clipboard.writeText(OCR_PROMPT).then(()=>toast('已复制 Prompt！去 AI 对话中粘贴')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=OCR_PROMPT;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('已复制 Prompt！');
+  });
+}
+
+function parseOCR(){
+  const raw=document.getElementById('ocrInput').value.trim();
+  const errEl=document.getElementById('ocrErr');
+  if(!raw){errEl.textContent='请先粘贴 AI 返回的结果';errEl.style.display='block';return}
+  try{
+    let json=raw;
+    // Try to extract JSON from markdown code block
+    const m=raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if(m)json=m[1].trim();
+    // Try to extract JSON object if there's surrounding text
+    if(!json.startsWith('{')){const m2=json.match(/\{[\s\S]*\}/);if(m2)json=m2[0]}
+    const parsed=JSON.parse(json);
+    if(!parsed.allergens||!Array.isArray(parsed.allergens)){throw new Error('missing allergens array')}
+    // Filter out negatives, validate each item
+    const valid=parsed.allergens.filter(a=>{
+      if(!a.name||typeof a.name!=='string')return false;
+      if(a.severity==='negative')return false;
+      // Normalize severity
+      if(a.severity!=='severe'&&a.severity!=='mild')a.severity='mild';
+      return true;
+    });
+    if(!valid.length){errEl.textContent='未识别到有效的食物过敏原。请确认报告中包含阳性结果。';errEl.style.display='block';return}
+    ocrParsed=valid;
+    renderOCRPreview();
+  }catch(e){
+    errEl.textContent='无法识别返回内容，请确认复制了 AI 的完整回复后重试。常见问题：回复中包含多余文字，或 JSON 格式不完整。';
+    errEl.style.display='block';
+  }
+}
+
+function renderOCRPreview(){
+  const c=gc();
+  const existing=(c.allergens||[]).map(a=>a.name);
+  const sv=ocrParsed.filter(a=>a.severity==='severe').length;
+  const ml=ocrParsed.length-sv;
+  document.getElementById('ocrSummary').textContent=`识别到 ${ocrParsed.length} 项食物过敏原，其中重度 ${sv} 项、轻度 ${ml} 项`;
+  const list=document.getElementById('ocrList');
+  list.innerHTML='';
+  ocrParsed.forEach((a,i)=>{
+    const row=document.createElement('div');row.className='ocr-row';
+    const name=document.createElement('div');name.className='ocr-name';
+    name.textContent=a.name;
+    if(existing.includes(a.name)){const u=document.createElement('span');u.className='ocr-upd';u.textContent='将更新';name.appendChild(u)}
+    const val=document.createElement('div');val.className='ocr-val';
+    val.textContent=a.value?(a.value+(a.unit?' '+a.unit:'')):(a.level||'');
+    const sev=document.createElement('button');sev.className='ocr-sev '+(a.severity==='severe'?'sv':'ml');
+    sev.textContent=a.severity==='severe'?'🚫 重度':'⚡ 轻度';
+    sev.onclick=()=>{a.severity=a.severity==='severe'?'mild':'severe';renderOCRPreview()};
+    const del=document.createElement('button');del.className='ocr-del';del.textContent='✕';
+    del.onclick=()=>{ocrParsed.splice(i,1);if(!ocrParsed.length){ocrBack();return}renderOCRPreview()};
+    row.appendChild(name);row.appendChild(val);row.appendChild(sev);row.appendChild(del);
+    list.appendChild(row);
+  });
+  document.getElementById('ocrS1').style.display='none';
+  document.getElementById('ocrS2').style.display='block';
+}
+
+function ocrBack(){
+  document.getElementById('ocrS1').style.display='block';
+  document.getElementById('ocrS2').style.display='none';
+}
+
+function doOCRImport(){
+  const c=gc();if(!c||!ocrParsed||!ocrParsed.length)return;
+  if(!c.allergens)c.allergens=[];
+  let added=0,updated=0;
+  ocrParsed.forEach(a=>{
+    const idx=c.allergens.findIndex(e=>e.name===a.name);
+    if(idx>=0){c.allergens[idx]={name:a.name,severity:a.severity};updated++}
+    else{c.allergens.push({name:a.name,severity:a.severity});added++}
+  });
+  save();render();closeM('mOCR');
+  let msg=`已导入 ${ocrParsed.length} 项过敏原`;
+  if(updated)msg+=`（${added} 项新增，${updated} 项更新）`;
+  toast(msg);
+  ocrParsed=null;
+}
 
 // === PROFILE (inline in record page) ===
 function renderProfile(){
