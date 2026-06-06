@@ -505,6 +505,21 @@ input{font-family:inherit;}
     </div>
   </div>
 
+  <!-- BABY EDIT SHEET -->
+  <div class="sheet" id="sheet-baby">
+    <div class="grab"></div>
+    <button class="sheet-x" onclick="closeSheets()" aria-label="关闭">✕</button>
+    <div class="body">
+      <div style="font-weight:700;font-size:18px">宝宝信息</div>
+      <div class="tiny muted" style="margin:3px 0 14px">改名字或年龄不会动你已经记录的内容。</div>
+      <div class="field" style="margin-top:0"><label>宝宝小名</label>
+        <input id="be-name" type="text" placeholder="例如：小满" autocomplete="off"></div>
+      <div class="field"><label>大概多大了</label>
+        <div class="monthchips" id="be-months"></div></div>
+      <button class="btn" id="be-save" style="margin-top:16px">保存</button>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 </div>
 <script>
@@ -567,6 +582,7 @@ function seed(){
 /* ---------------- helpers ---------------- */
 const pad=n=>String(n).padStart(2,'0');
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ageText=m=>{m=Number(m);if(!Number.isFinite(m))return '—';if(m>=900)return '3 岁以上';if(m<12)return m+' 个月';const y=Math.floor(m/12),mo=m%12;return mo?y+' 岁 '+mo+' 个月':y+' 岁';};
 const fmtT=ts=>{const d=new Date(ts);return pad(d.getHours())+':'+pad(d.getMinutes());};
 const fmtMD=ts=>{const d=new Date(ts);return(d.getMonth()+1)+'/'+d.getDate();};
 const sameDay=(a,b)=>{const x=new Date(a),y=new Date(b);return x.toDateString()===y.toDateString();};
@@ -914,7 +930,7 @@ function buildAnalysisPack(){
   const b=S.baby;
   let p='# 敏宝饮食管家 — 数据包（给 AI 整理用）\n\n> 把以下全部内容发给大模型（Claude / ChatGPT / Kimi），它会按规则整理成给医生看的材料。\n\n---\n\n## 分析指令\n\n'+ANALYSIS_PROMPT+'\n\n---\n\n## 待整理数据\n\n';
   const recDays=new Set(S.entries.map(e=>new Date(e.ts).toDateString())).size;
-  p+=`宝宝：${b?b.name:'—'} · ${b?b.months:'—'} 月龄\n已知过敏原：${S.allergens.map(a=>a.name+'('+a.level+')').join('、')||'无'}\n记录：${S.entries.length} 条 / ${recDays} 天\n\n### 逐条记录（时间倒序）\n`;
+  p+=`宝宝：${b?b.name:'—'} · ${b?ageText(b.months):'—'}\n已知过敏原：${S.allergens.map(a=>a.name+'('+a.level+')').join('、')||'无'}\n记录：${S.entries.length} 条 / ${recDays} 天\n\n### 逐条记录（时间倒序）\n`;
   [...S.entries].sort((a,b)=>b.ts-a.ts).forEach(e=>{
     const d=new Date(e.ts);const t=`${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     if(e.type==='food')p+=`- ${t} 进食[${e.meal||'加餐'}]：${[...new Set(e.items)].join('、')}（喂养：${e.caregiver}）\n`;
@@ -947,7 +963,7 @@ function renderPaper(D){
        <div style="text-align:right;flex:0 0 auto;margin-left:12px"><div style="width:38px;height:38px;border-radius:10px;background:var(--clay-soft);display:grid;place-items:center;font-size:18px;margin-left:auto">🌱</div>
        <div style="font-size:10px;color:var(--ink-3);margin-top:5px">生成于 ${fmtMD(Date.now())}</div></div>
      </div>
-     <div class="metarow"><span><b>${esc(b.name)}</b> · ${esc(b.months)} 月龄</span><span>周期 ${fmtMD(D.from)}–${fmtMD(D.to)}（${D.recDays} 天）</span>
+     <div class="metarow"><span><b>${esc(b.name)}</b> · ${esc(ageText(b.months))}</span><span>周期 ${fmtMD(D.from)}–${fmtMD(D.to)}（${D.recDays} 天）</span>
        <span>${D.total} 条记录</span><span class="${D.enough?'ok':''}">数据充足度 ${D.enough?'●●●○':'●●○○'}</span></div>
 
      ${(D.recDays<7||D.total<5)?'<div style="background:var(--amber-soft);border:1px solid #e8d7b0;border-radius:8px;padding:10px 13px;font-size:11.5px;color:#7a5d24;line-height:1.5;margin-bottom:14px">⚠️ 数据偏少（'+D.recDays+' 天 / '+D.total+' 条），本摘要仅适合作复诊沟通，<b>不适合用来看规律或下结论</b>。建议继续记录到 7 天以上再看模式。</div>':''}
@@ -1021,14 +1037,22 @@ $('#ocr-import').onclick=()=>{if(!ocrParsed||!ocrParsed.length)return;
   save();closeSheets();renderHome();toast(`已导入 ${ocrParsed.length} 项过敏原`);ocrParsed=null;};
 
 /* ---------------- ONBOARDING ---------------- */
-let obName='',obMonths=8;
-function renderMonths(){const opts=[['1 个月',1],['3 个月',3],['6 个月',6],['8 个月',8],['1 岁',12]];
-  $('#ob-months').innerHTML=opts.map(([l,v])=>`<button class="chipbtn ${v===obMonths?'on':''}" data-m="${v}">${l}</button>`).join('');
+let obName='',obMonths=6;
+const AGE_OPTS=[['3 个月',3],['6 个月',6],['9 个月',9],['1 岁',12],['1 岁半',18],['2 岁',24],['3 岁',36],['3 岁以上',999]];
+function renderMonths(){$('#ob-months').innerHTML=AGE_OPTS.map(([l,v])=>`<button class="chipbtn ${v===obMonths?'on':''}" data-m="${v}">${l}</button>`).join('');
   $$('#ob-months button').forEach(b=>b.onclick=()=>{obMonths=+b.dataset.m;renderMonths();});}
 $('#ob-name').oninput=e=>{obName=e.target.value.trim();$('#ob-go').disabled=!obName;};
 $('#ob-go').disabled=true;
 $('#ob-go').onclick=()=>{if(!obName)return;S={baby:{name:obName,months:obMonths},allergens:[],revisit:'两周后',entries:[]};save();
   setTab('home');toast('开始记录吧 · 先随手记一餐');};
+
+/* 编辑宝宝信息（改名字/年龄，不动已记录数据） */
+let beMonths=6;
+function renderBeMonths(){$('#be-months').innerHTML=AGE_OPTS.map(([l,v])=>`<button class="chipbtn ${v===beMonths?'on':''}" data-m="${v}">${l}</button>`).join('');
+  $$('#be-months button').forEach(b=>b.onclick=()=>{beMonths=+b.dataset.m;renderBeMonths();});}
+function openBabyEdit(){if(!S.baby)return;beMonths=S.baby.months||6;$('#be-name').value=S.baby.name||'';renderBeMonths();openSheet('sheet-baby');}
+$('#home-baby').onclick=openBabyEdit;
+$('#be-save').onclick=()=>{const n=$('#be-name').value.trim();if(!n){toast('请填宝宝小名');return;}S.baby.name=n;S.baby.months=beMonths;save();renderHome();closeSheets();toast('已更新');};
 
 /* dev: replay onboarding */
 function devOnboard(){localStorage.removeItem(STORE);S={baby:null};obName='';obMonths=8;$('#ob-name').value='';$('#ob-go').disabled=true;renderMonths();showView('scr-onboard');}
