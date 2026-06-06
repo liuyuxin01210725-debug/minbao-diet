@@ -1,5 +1,5 @@
 // 敏宝饮食管家 Service Worker — stale-while-revalidate
-const CACHE = 'minbao-v4';
+const CACHE = 'minbao-v5';
 const ASSETS = [
   './',
   './敏宝饮食管家.html',

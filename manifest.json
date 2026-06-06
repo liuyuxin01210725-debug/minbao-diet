@@ -5,12 +5,12 @@
   "start_url": "./敏宝饮食管家.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#F5F6F8",
-  "theme_color": "#4A90A4",
+  "background_color": "#F4EDE4",
+  "theme_color": "#C9764F",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍼</text></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
