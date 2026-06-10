@@ -22,9 +22,9 @@
 
 ## 部署
 
-GitHub Pages: https://liuyuxin01210725-debug.github.io/minbao-diet/
+Vercel: https://minbao-diet.vercel.app/
 
-Legacy 部署模式（从 main 分支直接部署，非 workflow）。
+Vercel 从 main 分支自动部署；GitHub Pages 链接仅作旧版兼容。
 
 ## Skill routing
 

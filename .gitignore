@@ -1,5 +1,6 @@
 .DS_Store
 .claude/
+.vercel/
 .gstack/
 audit/
 设计交接包/
