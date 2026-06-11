@@ -772,13 +772,13 @@ function resetVoice(){$('#transcript').className='transcript ph';
 function stopListening(){listening=false;try{rec&&rec.stop();}catch(e){}$('#voicewrap').classList.remove('listening');$('#mic').classList.remove('listening');}
 function startListening(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){simulate();return;}
+  if(!SR){toast('这个浏览器用不了语音输入，请用上方的“点选记一餐 / 记反应”');return;}
   try{rec=new SR();rec.lang='zh-CN';rec.interimResults=true;listening=true;
     $('#voicewrap').classList.add('listening');$('#mic').classList.add('listening');
     $('#transcript').className='transcript';$('#transcript').textContent='我在听…';
     rec.onresult=ev=>{let t='';for(const r of ev.results)t+=r[0].transcript;$('#transcript').textContent='“'+t+'”';if(ev.results[0].isFinal)finishVoice(t);};
     rec.onerror=()=>{stopListening();};rec.start();
-  }catch(e){simulate();}
+  }catch(e){listening=false;toast('语音没接上，请用“点选记一餐 / 记反应”');}
 }
 function simulate(){const t=SAMPLES[Math.floor(Math.random()*SAMPLES.length)];
   $('#voicewrap').classList.add('listening');$('#mic').classList.add('listening');
@@ -789,7 +789,7 @@ function finishVoice(text){stopListening();const p=parse(text);openConfirm(p,tex
 const mic=$('#mic');
 mic.addEventListener('mousedown',startListening);mic.addEventListener('touchstart',e=>{e.preventDefault();startListening();},{passive:false});
 mic.addEventListener('mouseup',()=>{if(listening)stopListening();});mic.addEventListener('touchend',()=>{if(listening)stopListening();});
-mic.addEventListener('click',e=>{if(!(window.SpeechRecognition||window.webkitSpeechRecognition)){simulate();}});
+mic.addEventListener('click',e=>{if(!(window.SpeechRecognition||window.webkitSpeechRecognition)){toast('这个浏览器用不了语音输入，请用“点选记一餐 / 记反应”');}});
 $('#simbtn').onclick=e=>{e.stopPropagation();simulate();};
 
 /* parse a sentence into structure */
