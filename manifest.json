@@ -1,19 +1,41 @@
 {
   "name": "敏宝饮食管家",
   "short_name": "敏宝饮食",
-  "description": "帮助过敏宝宝家庭记录饮食和症状",
-  "start_url": "./敏宝饮食管家.html",
+  "description": "帮助过敏宝宝家庭记录饮食、症状和复诊摘要，默认数据只保存在本机。",
+  "id": "./",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#F4EDE4",
   "theme_color": "#C9764F",
   "orientation": "portrait",
+  "lang": "zh-CN",
+  "categories": ["health", "medical", "productivity"],
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>",
+      "src": "icons/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
